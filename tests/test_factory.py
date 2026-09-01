@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """Tests for the document factory and the PDF/UA-1 gate.
 
 Run from the repo root:
