@@ -9,7 +9,7 @@ wrapper, compiles it on the pinned toolchain, and runs the same gate as the
 hand-authored books - so revising or re-versioning a book is editing Markdown and
 YAML, no Typst.
 
-    tools/make_book.py path/to/book.yaml [-o out.pdf]
+    tools/make_book.py path/to/book.yaml [-o out.pdf] [--root project-dir]
 
 book.yaml:
     title, subtitle, version, date    document metadata ({{vars}} allowed)
@@ -41,8 +41,8 @@ import sys
 WS = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 TYPST = os.environ.get("TYPST", os.path.expanduser("~/.local/bin/typst"))
 VERAPDF = os.environ.get("VERAPDF", os.path.expanduser("~/.local/verapdf/verapdf"))
-FONTS = os.path.join(WS, "engine", "fonts")
-PACKAGES = os.path.join(WS, "packages")
+FONTS = os.environ.get("COLOFON_FONTS", os.path.join(WS, "engine", "fonts"))
+PACKAGES = os.environ.get("COLOFON_PACKAGES", os.path.join(WS, "packages"))
 # A missing verifier fails the build. Opting out has to be deliberate, because a
 # book that reports success having verified nothing is worse than no book.
 ALLOW_UNVERIFIED = os.environ.get("COLOFON_ALLOW_UNVERIFIED") == "1"
@@ -57,8 +57,18 @@ def tstr(s):
     return '"' + str(s).replace("\\", "\\\\").replace('"', '\\"') + '"'
 
 
-def root_abs(path):
-    return "/" + os.path.relpath(os.path.abspath(path), WS).replace(os.sep, "/")
+def root_abs(path, project_root):
+    return "/" + os.path.relpath(os.path.abspath(path), project_root).replace(os.sep, "/")
+
+
+def project_root_for(path):
+    """Use the input's Git worktree as the asset/build root when available."""
+    directory = os.path.dirname(os.path.abspath(path))
+    r = subprocess.run(
+        ["git", "-C", directory, "rev-parse", "--show-toplevel"],
+        capture_output=True, text=True,
+    )
+    return os.path.abspath(r.stdout.strip()) if r.returncode == 0 and r.stdout.strip() else WS
 
 
 def subst(text, variables, unknown):
@@ -76,9 +86,16 @@ def main():
     ap = argparse.ArgumentParser(description="assemble a book from book.yaml + Markdown chapters")
     ap.add_argument("book", help="the book.yaml outline")
     ap.add_argument("-o", "--output")
+    ap.add_argument(
+        "--root",
+        help="Typst project root and .factory-build owner (default: the input's Git worktree)",
+    )
     a = ap.parse_args()
     if not os.path.isfile(a.book):
         die(f"no such file: {a.book}")
+    project_root = os.path.abspath(a.root or project_root_for(a.book))
+    if not os.path.isdir(project_root):
+        die(f"project root is not a directory: {project_root}")
     import yaml
 
     spec = yaml.safe_load(open(a.book, encoding="utf-8")) or {}
@@ -123,7 +140,7 @@ def main():
     variables.update(spec.get("vars") or {})
 
     stem = os.path.splitext(os.path.basename(a.book))[0]
-    builddir = os.path.join(WS, ".factory-build", "book-" + stem, "ch")
+    builddir = os.path.join(project_root, ".factory-build", "book-" + stem, "ch")
     os.makedirs(builddir, exist_ok=True)
 
     # substitute {{vars}} in metadata and chapters; collect any undefined references
@@ -135,7 +152,7 @@ def main():
     for idx, (path, text) in enumerate(chapter_files):
         pp = os.path.join(builddir, f"{idx:02d}-{os.path.basename(path)}")
         open(pp, "w", encoding="utf-8").write(subst(text, variables, unknown))
-        proc[path] = root_abs(pp)
+        proc[path] = root_abs(pp, project_root)
     if unknown:
         die(f"undefined variable(s) used as {{{{...}}}}: {sorted(unknown)} - define them in 'vars' or 'vars-from'")
 
@@ -147,7 +164,15 @@ def main():
         '#import "@local/bookmd:0.1.0": chapter-md',
     ]
     if brand:
-        imports.append(f'#import "@local/{brand}:0.1.0": book-args as _brand')
+        consumer_brand = os.path.join(
+            project_root, "packages", "local", brand, "0.1.0", "lib.typ"
+        )
+        if os.path.realpath(project_root) != os.path.realpath(WS) and os.path.isfile(consumer_brand):
+            imports.append(
+                f'#import "/packages/local/{brand}/0.1.0/lib.typ": book-args as _brand'
+            )
+        else:
+            imports.append(f'#import "@local/{brand}:0.1.0": book-args as _brand')
     head = imports + [
         "",
         "#show: book.with(",
@@ -186,10 +211,11 @@ def main():
     main_typ = os.path.join(os.path.dirname(builddir), "main.typ")
     open(main_typ, "w", encoding="utf-8").write("\n".join(head + body) + "\n")
     out = a.output or os.path.join(base, stem + ".pdf")
+    os.makedirs(os.path.dirname(os.path.abspath(out)), exist_ok=True)
 
     # the gate: compile under ua-1 with no warnings, veraPDF ua1, no zero-width spaces
     r = subprocess.run([
-        TYPST, "compile", "--root", WS,
+        TYPST, "compile", "--root", project_root,
         "--package-path", PACKAGES, "--package-cache-path", PACKAGES,
         "--font-path", FONTS, "--pdf-standard", "ua-1", main_typ, out,
     ], capture_output=True, text=True)

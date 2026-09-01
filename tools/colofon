@@ -1,0 +1,85 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+APP=${COLOFON_HOME:-$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)}
+
+usage() {
+  cat <<'EOF'
+Colofon - accessible Typst document factory
+
+Usage:
+  colofon doc <file-or-dir>... [make_doc options]
+  colofon book <book.yaml> [make_book options]
+  colofon form <form.typ> [make_form options]
+  colofon lint <chapter.md>...
+  colofon convert <chapter.typ>
+  colofon test
+  colofon version
+
+The doc, book, and form commands use the current directory as the Typst project
+root unless --root is supplied. In Docker, mount a project at /work and run the
+container with /work as its working directory.
+EOF
+}
+
+has_root() {
+  for arg in "$@"; do
+    case "$arg" in
+      --root|--root=*) return 0 ;;
+    esac
+  done
+  return 1
+}
+
+case "${1:-help}" in
+  doc)
+    shift
+    if has_root "$@"; then
+      exec python3 "$APP/tools/make_doc.py" "$@"
+    fi
+    exec python3 "$APP/tools/make_doc.py" --root "$PWD" "$@"
+    ;;
+  book)
+    shift
+    if has_root "$@"; then
+      exec python3 "$APP/tools/make_book.py" "$@"
+    fi
+    exec python3 "$APP/tools/make_book.py" --root "$PWD" "$@"
+    ;;
+  form)
+    shift
+    if has_root "$@"; then
+      exec python3 "$APP/tools/make_form.py" "$@"
+    fi
+    exec python3 "$APP/tools/make_form.py" --root "$PWD" "$@"
+    ;;
+  lint)
+    shift
+    exec python3 "$APP/tools/bookmd_lint.py" "$@"
+    ;;
+  convert)
+    shift
+    exec python3 "$APP/tools/typ2md.py" "$@"
+    ;;
+  test)
+    shift
+    cd "$APP"
+    exec ./build.sh "$@"
+    ;;
+  version)
+    typst_bin=${TYPST:-$HOME/.local/bin/typst}
+    verapdf_bin=${VERAPDF:-$HOME/.local/verapdf/verapdf}
+    printf 'Colofon\n'
+    "$typst_bin" --version
+    "$verapdf_bin" --version
+    python3 --version
+    ;;
+  help|-h|--help)
+    usage
+    ;;
+  *)
+    printf 'colofon: unknown command: %s\n\n' "$1" >&2
+    usage >&2
+    exit 2
+    ;;
+esac

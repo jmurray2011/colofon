@@ -5,6 +5,8 @@ A house style and document factory built on [Typst](https://typst.app). Hand it 
 -- accent colors and the callout palette -- is themeable, so the same engine renders any
 brand's documents.
 
+[![CI](https://github.com/jmurray2011/colofon/actions/workflows/ci.yml/badge.svg)](https://github.com/jmurray2011/colofon/actions/workflows/ci.yml)
+
 | Path | What it is |
 | --- | --- |
 | `packages/local/house/` | The house-style Typst package: the `book` template, document-factory templates, and components. Brand colors come from a `theme` argument. |
@@ -195,6 +197,42 @@ style version.
 - veraPDF (`~/.local/verapdf/verapdf`) for the PDF/UA-1 check
 - python3 + PyYAML + PyMuPDF for the factory tools (`pip install -r tools/requirements.txt`)
 - `typstyle` (optional) for formatting
+
+## Container
+
+The image contains Colofon, IBM Plex, Typst, veraPDF, Java, Python, PyYAML, PyMuPDF,
+Git, and `pdftotext`. Typst and veraPDF downloads are versioned and checksum-verified, so
+the image builds directly from a clean checkout without a local tool cache.
+
+```sh
+docker build -t colofon:local .
+docker run --rm colofon:local version
+docker run --rm colofon:local test
+```
+
+Release images are published for AMD64 and ARM64 through GitHub Container Registry:
+
+```sh
+docker pull ghcr.io/jmurray2011/colofon:0.1.0
+docker run --rm ghcr.io/jmurray2011/colofon:0.1.0 version
+```
+
+Mount a document project at `/work` to build its sources. Outputs and `.factory-build/`
+remain in the mounted project:
+
+```sh
+docker run --rm -v "$PWD:/work" -w /work colofon:local \
+  doc report.md -o build/report.pdf
+
+docker run --rm -v "$PWD:/work" -w /work colofon:local \
+  book book.yaml -o build/book.pdf
+
+docker run --rm -v "$PWD:/work" -w /work colofon:local \
+  form request.typ -o build/request.pdf
+```
+
+The entrypoint also provides `lint`, `convert`, and `help`. On Linux, add
+`--user "$(id -u):$(id -g)"` when generated files should use the invoking user's IDs.
 
 ## License
 

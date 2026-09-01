@@ -230,7 +230,7 @@ class VeraPdfActuallyDiscriminates(unittest.TestCase):
 
     def test_conforming_document_passes_and_damaged_one_fails(self):
         try:
-            import fitz
+            import pymupdf as fitz
         except ImportError:
             self.skipTest("PyMuPDF not installed")
         with tempfile.TemporaryDirectory() as d:
@@ -370,7 +370,7 @@ class ReportTemplateOutput(unittest.TestCase):
 
     def render(self, front, body="# Section one\n\nBody text.\n"):
         try:
-            import fitz
+            import pymupdf as fitz
         except ImportError:
             self.skipTest("PyMuPDF not installed")
         with tempfile.TemporaryDirectory() as d:
@@ -410,7 +410,7 @@ class CalloutLabelSpacing(unittest.TestCase):
 
     def test_label_clears_the_body_text(self):
         try:
-            import fitz
+            import pymupdf as fitz
         except ImportError:
             self.skipTest("PyMuPDF not installed")
         md = ("---\ndoctype: report\ntitle: T\n---\n\n"

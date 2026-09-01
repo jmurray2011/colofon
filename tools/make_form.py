@@ -7,7 +7,7 @@ record each field's geometry as <ff>/<ffr> metadata. This compiles the static
 layout, reads that geometry back with `typst query`, and overlays real fillable
 AcroForm widgets (text fields, checkboxes) at the same coordinates via PyMuPDF.
 
-    tools/make_form.py path/to/form.typ [-o out.pdf] [--debug]
+    tools/make_form.py path/to/form.typ [-o out.pdf] [--root project-dir] [--debug]
 
 This is a SEPARATE path from the Markdown factory (tools/make_doc.py): a form is
 authored in Typst because fillable fields need explicit placement. The AcroForm
@@ -27,8 +27,8 @@ import sys
 WS = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 TYPST = os.environ.get("TYPST", os.path.expanduser("~/.local/bin/typst"))
 VERAPDF = os.environ.get("VERAPDF", os.path.expanduser("~/.local/verapdf/verapdf"))
-FONTS = os.path.join(WS, "engine", "fonts")
-PACKAGES = os.path.join(WS, "packages")
+FONTS = os.environ.get("COLOFON_FONTS", os.path.join(WS, "engine", "fonts"))
+PACKAGES = os.environ.get("COLOFON_PACKAGES", os.path.join(WS, "packages"))
 
 INK = (0x1B / 255, 0x1B / 255, 0x22 / 255)
 ACC = (0x76 / 255, 0x54 / 255, 0xF5 / 255)
@@ -40,14 +40,24 @@ def die(msg):
     sys.exit(2)
 
 
-def typst_common():
-    return ["--root", WS, "--package-path", PACKAGES,
+def project_root_for(path):
+    """Use the input's Git worktree as the asset/build root when available."""
+    directory = os.path.dirname(os.path.abspath(path))
+    r = subprocess.run(
+        ["git", "-C", directory, "rev-parse", "--show-toplevel"],
+        capture_output=True, text=True,
+    )
+    return os.path.abspath(r.stdout.strip()) if r.returncode == 0 and r.stdout.strip() else WS
+
+
+def typst_common(project_root):
+    return ["--root", project_root, "--package-path", PACKAGES,
             "--package-cache-path", PACKAGES, "--font-path", FONTS]
 
 
-def query(src, sel):
+def query(src, sel, project_root):
     r = subprocess.run(
-        [TYPST, "query", *typst_common(), src, sel, "--field", "value"],
+        [TYPST, "query", *typst_common(project_root), src, sel, "--field", "value"],
         capture_output=True, text=True,
     )
     if r.returncode != 0:
@@ -59,25 +69,33 @@ def main():
     ap = argparse.ArgumentParser(description="overlay AcroForm widgets onto a house form")
     ap.add_argument("input", help="the form .typ file")
     ap.add_argument("-o", "--output")
+    ap.add_argument(
+        "--root",
+        help="Typst project root and .factory-build owner (default: the input's Git worktree)",
+    )
     ap.add_argument("--debug", action="store_true", help="draw widget borders")
     a = ap.parse_args()
     if not os.path.isfile(a.input):
         die(f"no such file: {a.input}")
+    project_root = os.path.abspath(a.root or project_root_for(a.input))
+    if not os.path.isdir(project_root):
+        die(f"project root is not a directory: {project_root}")
 
     try:
-        import fitz
+        import pymupdf as fitz
     except ImportError:
         die("PyMuPDF is required (pip install --user PyMuPDF)")
 
     stem = os.path.splitext(os.path.basename(a.input))[0]
-    builddir = os.path.join(WS, ".factory-build", stem)
+    builddir = os.path.join(project_root, ".factory-build", stem)
     os.makedirs(builddir, exist_ok=True)
     static = os.path.join(builddir, "static.pdf")
     out = a.output or os.path.join(os.path.dirname(os.path.abspath(a.input)), stem + ".pdf")
+    os.makedirs(os.path.dirname(os.path.abspath(out)), exist_ok=True)
 
     # 1. compile the static layout (UA-1 base)
     r = subprocess.run(
-        [TYPST, "compile", *typst_common(), "--pdf-standard", "ua-1", a.input, static],
+        [TYPST, "compile", *typst_common(project_root), "--pdf-standard", "ua-1", a.input, static],
         capture_output=True, text=True,
     )
     if r.returncode != 0:
@@ -86,8 +104,8 @@ def main():
         die(f"compile produced warnings (gate fails):\n{r.stderr.strip()}")
 
     # 2. read back the field geometry the formfield helper recorded
-    ff = query(a.input, "<ff>")
-    right_x = {d["k"]: d["xr"] for d in query(a.input, "<ffr>")}
+    ff = query(a.input, "<ff>", project_root)
+    right_x = {d["k"]: d["xr"] for d in query(a.input, "<ffr>", project_root)}
     if not ff:
         die("no form fields found - did the document use field-block / checkbox?")
 

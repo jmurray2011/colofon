@@ -1,5 +1,9 @@
-# keep the build context small: the repo is bind-mounted at run time, so the image
-# only needs the vendored toolcache that the Dockerfile COPYs.
 .git
+.env
+.factory-build/
+.pytest_cache/
+.ruff_cache/
+**/__pycache__/
 **/build/
-engine/fonts
+CLAUDE.md
+tools/.toolcache/

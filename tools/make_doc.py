@@ -238,6 +238,7 @@ def build_one(path, output=None, project_root=WS):
     )
 
     out = output or os.path.join(os.path.dirname(os.path.abspath(path)), stem + ".pdf")
+    os.makedirs(os.path.dirname(os.path.abspath(out)), exist_ok=True)
     gate(wrapper, out, path, project_root)
     return out
 
