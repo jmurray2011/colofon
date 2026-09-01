@@ -16,7 +16,8 @@ repository releases; the versioned Typst packages declare their own compatible v
   runtime user.
 - Contributor, security, release, issue-reporting, and third-party license guidance.
 - A separate `colofon-form` image, explicitly licensed AGPL-3.0-only, with a complete
-  corresponding-source offer for its PyMuPDF/MuPDF form support.
+  corresponding-source offer and vendored license text for its PyMuPDF/MuPDF form
+  support.
 
 ### Changed
 

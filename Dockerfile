@@ -45,15 +45,6 @@ RUN set -eux; \
     install -m 0755 "/tmp/typst-${triple}/typst" /usr/local/bin/typst; \
     typst --version
 
-FROM tool-installer AS agpl-license
-
-ARG AGPL_SHA256=0d96a4ff68ad6d4b6f1f30f713b18d5184912ba8dd389f86aa7710db079abcb0
-RUN set -eux; \
-    license=/tmp/AGPL-3.0.txt; \
-    curl -fsSL https://www.gnu.org/licenses/agpl-3.0.txt -o "$license"; \
-    echo "${AGPL_SHA256}  ${license}" | sha256sum -c -
-
-
 # Resolve only hash-locked wheels here; pip and its build metadata do not enter
 # either runtime image.
 FROM eclipse-temurin:17-jre-jammy@sha256:e17d77fb030dd4b642dc078d048a5fb9efcb3676ee20305d905949105a6ccd5a AS python-installer
@@ -148,7 +139,7 @@ ENV COLOFON_FORMS=1 \
     PYTHONPATH=/opt/colofon-form-python:/opt/colofon-python
 
 COPY --from=form-python-deps /opt/colofon-form-python /opt/colofon-form-python
-COPY --from=agpl-license /tmp/AGPL-3.0.txt /usr/share/licenses/colofon-form/AGPL-3.0.txt
+COPY --chmod=0644 licenses/AGPL-3.0.txt /usr/share/licenses/colofon-form/AGPL-3.0.txt
 
 RUN python3 -c "import pymupdf; assert pymupdf.__version__ == '1.28.2'"
 

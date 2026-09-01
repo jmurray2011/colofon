@@ -22,9 +22,9 @@ MuPDF binaries. The release notes include their SHA-256 checksums. The authorita
 binary dependency hashes are in `tools/requirements-form-container.txt`, and the
 reproducible build recipe is the `forms` target in `Dockerfile`.
 
-The full AGPL-3.0 license text is installed in the image at
-`/usr/share/licenses/colofon-form/AGPL-3.0.txt`. Source remains available for as long as
-the corresponding image is offered. If an attachment becomes unavailable, report it
-through the repository's issue tracker so equivalent access can be restored.
+The full AGPL-3.0 license text is vendored at `licenses/AGPL-3.0.txt` and installed in
+the image at `/usr/share/licenses/colofon-form/AGPL-3.0.txt`. Source remains available
+for as long as the corresponding image is offered. If an attachment becomes unavailable,
+report it through the repository's issue tracker so equivalent access can be restored.
 
 No commercial Artifex license is included with this distribution.
