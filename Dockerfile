@@ -138,9 +138,13 @@ LABEL org.opencontainers.image.title="Colofon Forms" \
 ENV COLOFON_FORMS=1 \
     PYTHONPATH=/opt/colofon-form-python:/opt/colofon-python
 
+USER root
+RUN install -d -m 0755 /usr/share/licenses/colofon-form
+
 COPY --from=form-python-deps /opt/colofon-form-python /opt/colofon-form-python
 COPY --chmod=0644 licenses/AGPL-3.0.txt /usr/share/licenses/colofon-form/AGPL-3.0.txt
 
+USER colofon
 RUN python3 -c "import pymupdf; assert pymupdf.__version__ == '1.28.2'"
 
 
