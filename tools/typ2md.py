@@ -253,7 +253,7 @@ def convert(text):
 
     # code fences: keep verbatim
     text = re.sub(r"```[a-z]*\n.*?\n```", lambda m: (store.append(m.group(0)), ph())[1],
-                  text, flags=re.S)
+                  text, flags=re.DOTALL)
 
     # custom #let/#set/#ident(...) statements (e.g. the glossary's g()) -> raw-typst
     text = protect_custom(text, store)
@@ -328,4 +328,5 @@ def convert(text):
 
 
 if __name__ == "__main__":
-    sys.stdout.write(convert(open(sys.argv[1], encoding="utf-8").read()))
+    with open(sys.argv[1], encoding="utf-8") as source:
+        sys.stdout.write(convert(source.read()))

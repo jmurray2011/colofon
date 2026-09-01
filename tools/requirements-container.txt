@@ -1,0 +1,4 @@
+# Hash-locked Linux CPython 3.10 wheel used by the core AMD64/ARM64 container.
+PyYAML==6.0.3 \
+    --hash=sha256:9c7708761fccb9397fe64bbc0395abcae8c4bf7b0eac081e12b809bf47700d0b \
+    --hash=sha256:b30236e45cf30d2b8e7b3e85881719e98507abed1011bf463a8fa23e9c3e98a8

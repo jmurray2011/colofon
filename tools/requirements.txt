@@ -1,7 +1,4 @@
-# Host-side Python deps for the document-factory tools (run on the host, not in the
-# build image). The Typst compile + UA-1 gate are pinned/vendored; these are just the
-# orchestration libraries.
+# Host-side dependency for the document and book factory. The core container uses
+# the separately hash-locked requirements-container.txt for repeatable Linux builds.
 #   tools/make_doc.py  - Markdown + YAML front-matter -> house template -> PDF/UA-1
-#   tools/make_form.py - overlay interactive AcroForm widgets onto a house form
 PyYAML>=6
-PyMuPDF>=1.24

@@ -81,7 +81,7 @@ class FrontMatterGuards(unittest.TestCase):
     def test_missing_required_key_is_rejected(self):
         # every doctype declares its required keys; omitting one must fail
         for doctype, schema in make_doc.DOCTYPE_SCHEMA.items():
-            required = sorted(schema["required"])[0]
+            required = min(schema["required"])
             with self.subTest(doctype=doctype, omitted=required):
                 self.assertRejects(f"---\ndoctype: {doctype}\n---\n\nBody.\n",
                                    "requires front-matter key(s)")
@@ -157,6 +157,7 @@ class ConsumerProjectRoot(unittest.TestCase):
                 make_doc.build_one(src, project_root=os.path.join(d, "missing"))
         self.assertIn("project root is not a directory", str(cm.exception))
 
+    @unittest.skipUnless(shutil.which("git"), "Git not installed")
     def test_input_git_worktree_owns_generated_files(self):
         with tempfile.TemporaryDirectory() as root:
             subprocess.run(["git", "init", "-q", root], check=True)
@@ -207,7 +208,7 @@ class GateRejectsUnsafeCopy(unittest.TestCase):
         """Copy-safe means selecting the text yields what is on the page."""
         with tempfile.TemporaryDirectory() as d:
             src = write(d, "zwsp.md",
-                        "---\ndoctype: report\ntitle: Copy Safety\n---\n\nHello​world.\n")
+                        "---\ndoctype: report\ntitle: Copy Safety\n---\n\nHello\u200bworld.\n")
             with self.assertRaises(make_doc.BuildError) as cm:
                 make_doc.build_one(src, os.path.join(d, "zwsp.pdf"))
             self.assertIn("copy-safe check failed", str(cm.exception))
@@ -224,8 +225,12 @@ class VeraPdfActuallyDiscriminates(unittest.TestCase):
     """
 
     def verapdf_compliant(self, path):
-        r = subprocess.run([make_doc.VERAPDF, "--flavour", "ua1", path],
-                           capture_output=True, text=True)
+        r = subprocess.run(
+            [make_doc.VERAPDF, "--flavour", "ua1", path],
+            capture_output=True,
+            text=True,
+            check=False,
+        )
         return 'isCompliant="true"' in r.stdout
 
     def test_conforming_document_passes_and_damaged_one_fails(self):
@@ -285,11 +290,13 @@ class GateRequiresItsVerifiers(unittest.TestCase):
 
     def test_missing_pdftotext_fails_the_build(self):
         make_doc.ALLOW_UNVERIFIED = False
-        with mock.patch.object(make_doc.shutil, "which", return_value=None):
-            with tempfile.TemporaryDirectory() as d:
-                with self.assertRaises(make_doc.BuildError) as cm:
-                    self.build_minimal(d)
-                self.assertIn("pdftotext not found", str(cm.exception))
+        with (
+            mock.patch.object(make_doc.shutil, "which", return_value=None),
+            tempfile.TemporaryDirectory() as d,
+        ):
+            with self.assertRaises(make_doc.BuildError) as cm:
+                self.build_minimal(d)
+            self.assertIn("pdftotext not found", str(cm.exception))
 
     def test_opt_out_allows_an_unverified_build(self):
         """The escape hatch exists, but has to be asked for."""
@@ -310,9 +317,11 @@ class GateRequiresItsVerifiers(unittest.TestCase):
     def test_opt_out_requires_the_exact_value(self):
         """A stray truthy string must not disable the gate."""
         for value in ("0", "true", "yes", ""):
-            with self.subTest(value=value):
-                with mock.patch.dict(os.environ, {"COLOFON_ALLOW_UNVERIFIED": value}):
-                    self.assertFalse(os.environ.get("COLOFON_ALLOW_UNVERIFIED") == "1")
+            with (
+                self.subTest(value=value),
+                mock.patch.dict(os.environ, {"COLOFON_ALLOW_UNVERIFIED": value}),
+            ):
+                self.assertFalse(os.environ.get("COLOFON_ALLOW_UNVERIFIED") == "1")
 
 
 EXAMPLE_BOOK = os.path.join(EXAMPLES, "book", "book.yaml")
@@ -332,7 +341,7 @@ class BookGateRequiresItsVerifiers(unittest.TestCase):
         return subprocess.run(
             ["python3", os.path.join(WS, "tools", "make_book.py"), EXAMPLE_BOOK,
              "-o", os.path.join(outdir, "book.pdf")],
-            capture_output=True, text=True, env=env, cwd=WS,
+            capture_output=True, text=True, env=env, cwd=WS, check=False,
         )
 
     def test_missing_verapdf_fails_the_book_build(self):
@@ -382,8 +391,8 @@ class ReportTemplateOutput(unittest.TestCase):
 
     def test_author_appears_on_the_cover(self):
         """A report goes out under someone's name; metadata alone does not say who."""
-        pages = self.render("doctype: report\ntitle: T\nauthor: Office of the ISSO\n")
-        self.assertIn("Office of the ISSO", pages[0])
+        pages = self.render("doctype: report\ntitle: T\nauthor: Office of Records\n")
+        self.assertIn("Office of Records", pages[0])
 
     def test_contents_page_is_present_by_default(self):
         self.assertIn("Contents", self.render("doctype: report\ntitle: T\n")[1])
@@ -436,12 +445,14 @@ class FormReportsWithoutGating(unittest.TestCase):
     """
 
     def test_make_form_does_not_hard_gate(self):
-        src = open(os.path.join(WS, "tools", "make_form.py"), encoding="utf-8").read()
+        with open(os.path.join(WS, "tools", "make_form.py"), encoding="utf-8") as source:
+            src = source.read()
         self.assertIn("do not gate", src,
                       "make_form's report-only intent is no longer documented")
 
     def test_missing_verapdf_is_reported_not_skipped(self):
-        src = open(os.path.join(WS, "tools", "make_form.py"), encoding="utf-8").read()
+        with open(os.path.join(WS, "tools", "make_form.py"), encoding="utf-8") as source:
+            src = source.read()
         self.assertIn("NOT CHECKED", src,
                       "make_form must say when UA-1 was never checked")
 

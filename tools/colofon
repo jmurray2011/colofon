@@ -10,15 +10,16 @@ Colofon - accessible Typst document factory
 Usage:
   colofon doc <file-or-dir>... [make_doc options]
   colofon book <book.yaml> [make_book options]
-  colofon form <form.typ> [make_form options]
+  colofon form <form.typ> [make_form options]  # optional AGPL form image/extra
   colofon lint <chapter.md>...
   colofon convert <chapter.typ>
   colofon test
   colofon version
 
 The doc, book, and form commands use the current directory as the Typst project
-root unless --root is supplied. In Docker, mount a project at /work and run the
-container with /work as its working directory.
+root unless --root is supplied. Fillable forms require the optional PyMuPDF extra
+or the explicitly AGPL-licensed colofon-form image. In Docker, mount a project at
+/work and run the container with /work as its working directory.
 EOF
 }
 
@@ -48,6 +49,12 @@ case "${1:-help}" in
     ;;
   form)
     shift
+    if ! python3 -c 'import pymupdf' >/dev/null 2>&1; then
+      printf '%s\n' \
+        'colofon: fillable forms require the optional AGPL-licensed PyMuPDF extra.' \
+        'Use ghcr.io/jmurray2011/colofon-form, or install tools/requirements-form.txt.' >&2
+      exit 2
+    fi
     if has_root "$@"; then
       exec python3 "$APP/tools/make_form.py" "$@"
     fi
@@ -64,6 +71,10 @@ case "${1:-help}" in
   test)
     shift
     cd "$APP"
+    python3 -m unittest discover -s tests -v
+    if [[ "${COLOFON_FORMS:-0}" == 1 ]]; then
+      exec ./build.sh --forms-only "$@"
+    fi
     exec ./build.sh "$@"
     ;;
   version)

@@ -9,6 +9,9 @@ last-reviewed: June 2026
 severity: High
 ---
 
+> Fictional, AI-generated document created for example purposes. Names, organizations,
+> systems, events, and data are not real.
+
 # Prerequisites
 
 - Shell access to the ingest host with `sudo` rights.

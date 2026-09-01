@@ -1,0 +1,4 @@
+# Optional host-side fillable-form support. PyMuPDF is AGPL-3.0 or commercially
+# licensed; installing and using this extra means those terms apply.
+-r requirements.txt
+PyMuPDF>=1.24

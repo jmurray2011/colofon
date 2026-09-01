@@ -6,6 +6,16 @@ ROOT=$(cd -- "$HERE/../.." && pwd)
 OUT="$HERE/build"
 mkdir -p "$OUT"
 
+with_forms=0
+case "${1:-}" in
+  "") ;;
+  --with-forms) with_forms=1 ;;
+  *)
+    echo "usage: examples/larkspur/build.sh [--with-forms]" >&2
+    exit 2
+    ;;
+esac
+
 for source in "$HERE"/documents/*.md; do
   name=${source##*/}
   name=${name%.md}
@@ -13,6 +23,9 @@ for source in "$HERE"/documents/*.md; do
 done
 
 "$ROOT/tools/make_book.py" "$HERE/book/book.yaml" -o "$OUT/field-guide.pdf"
-"$ROOT/tools/make_form.py" "$HERE/field-request.typ" -o "$OUT/field-request.pdf"
+
+if [[ "$with_forms" == 1 ]]; then
+  "$ROOT/tools/make_form.py" "$HERE/field-request.typ" -o "$OUT/field-request.pdf"
+fi
 
 printf 'Built Larkspur examples in %s\n' "$OUT"

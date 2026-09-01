@@ -26,7 +26,7 @@ def slugify(s):
 
 
 def _asset(src):
-    p = src[5:] if src.startswith("shot:") else src
+    p = src.removeprefix("shot:")
     return os.path.join(WS, p.lstrip("/")) if p.startswith("/") else p
 
 
@@ -85,7 +85,10 @@ def main():
     if not paths:
         print("usage: bookmd_lint.py chapter.md [...]", file=sys.stderr)
         return 2
-    chapters = [(p, open(p, encoding="utf-8").read()) for p in paths]
+    chapters = []
+    for path in paths:
+        with open(path, encoding="utf-8") as chapter:
+            chapters.append((path, chapter.read()))
     problems, known = lint(chapters)
     n = report(problems, known)
     if n == 0 and not problems:

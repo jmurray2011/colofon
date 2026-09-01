@@ -34,17 +34,19 @@ def main():
     text = subprocess.run(
         ["pdftotext", "-nopgbrk", pdf, "-"],
         capture_output=True, text=True, encoding="utf-8",
+        check=False,
     ).stdout
 
     fails = []
-    zwsp = text.count("​")
+    zwsp = text.count("\u200b")
     if zwsp:
         fails.append(f"{zwsp} zero-width space(s) (U+200B) in the PDF text layer")
 
     miss = []
     for f in sorted(glob.glob(os.path.join(srcdir, "**", "*.typ"), recursive=True)):
-        src = open(f, encoding="utf-8").read()
-        for m in re.finditer(r"```[a-z]*\n(.*?)```", src, re.S):
+        with open(f, encoding="utf-8") as source:
+            src = source.read()
+        for m in re.finditer(r"```[a-z]*\n(.*?)```", src, re.DOTALL):
             for line in m.group(1).split("\n"):
                 for tok in line.split():
                     if len(tok) >= 4 and tok not in text:

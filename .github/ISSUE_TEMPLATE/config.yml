@@ -1,0 +1,5 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Security policy
+    url: https://github.com/jmurray2011/colofon/security/policy
+    about: Read the private-reporting guidance; do not disclose vulnerabilities publicly.

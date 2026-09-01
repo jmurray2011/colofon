@@ -1,0 +1,62 @@
+name: Bug report
+description: Report a reproducible Colofon defect.
+title: "[Bug]: "
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting a problem. Do not include credentials, private documents,
+        customer data, or sensitive infrastructure details.
+  - type: input
+    id: version
+    attributes:
+      label: Colofon version
+      description: Release tag, container tag/digest, or commit SHA.
+      placeholder: v0.1.0
+    validations:
+      required: true
+  - type: dropdown
+    id: path
+    attributes:
+      label: Build path
+      options:
+        - Container
+        - Host tools
+        - Typst package
+        - GitHub Actions
+        - Other
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Minimal reproduction
+      description: Use fictional, non-sensitive source and include the exact command.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior and diagnostics
+      description: Include sanitized errors and whether Typst or veraPDF reported warnings.
+    validations:
+      required: true
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: OS, architecture, Docker/Typst/veraPDF/Python versions as applicable.
+  - type: checkboxes
+    id: safety
+    attributes:
+      label: Safety check
+      options:
+        - label: I removed credentials and private or organization-specific information.
+          required: true

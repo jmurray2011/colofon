@@ -7,6 +7,9 @@ re: Document factory rollout
 cc: Leadership
 ---
 
+> Fictional, AI-generated document created for example purposes. Names, organizations,
+> systems, events, and data are not real.
+
 # Summary
 
 The document factory is live for reports, articles, minutes, and memos. Author in

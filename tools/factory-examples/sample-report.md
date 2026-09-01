@@ -9,6 +9,9 @@ logo: /tools/factory-examples/assets/example-logo.png
 logo-alt: Acme logo
 ---
 
+> Fictional, AI-generated document created for example purposes. Names, organizations,
+> systems, events, and data are not real.
+
 # Overview
 
 This report was generated from **Markdown** by the document factory: a single

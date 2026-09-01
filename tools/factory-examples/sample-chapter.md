@@ -1,5 +1,9 @@
 # Initial setup {#ch-initial-setup}
 
+> [!note]
+> This is a fictional, AI-generated document created for example purposes. Names,
+> organizations, systems, events, and data are not real.
+
 After the application is installed and running, complete its initial setup: load a
 configuration file, start the service, verify the health check, and secure the public
 endpoint. These steps are the same across all supported platforms.

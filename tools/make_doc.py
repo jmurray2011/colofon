@@ -88,7 +88,7 @@ def die(msg):
 
 
 def split_front_matter(text, path):
-    m = re.match(r"^---\n(.*?)\n---\n?(.*)$", text, re.S)
+    m = re.match(r"^---\n(.*?)\n---\n?(.*)$", text, re.DOTALL)
     if not m:
         raise BuildError(f"{path}: no YAML front-matter (expected a leading --- ... --- block)")
     import yaml
@@ -176,7 +176,7 @@ def build_wrapper(meta, doctype, project_root=WS):
 
 
 def run(cmd):
-    return subprocess.run(cmd, capture_output=True, text=True)
+    return subprocess.run(cmd, capture_output=True, text=True, check=False)
 
 
 def require_verifier(path, tool, hint):
@@ -202,16 +202,25 @@ def gate(wrapper, out, path, project_root=WS):
     ])
     if r.returncode != 0:
         raise BuildError(f"{path}: compile failed:\n{r.stderr.strip()}")
-    if re.search(r"warning", r.stderr, re.I):
+    if re.search(r"warning", r.stderr, re.IGNORECASE):
         raise BuildError(f"{path}: compile produced warnings (gate fails):\n{r.stderr.strip()}")
     if os.path.exists(VERAPDF):
         r = run([VERAPDF, "--flavour", "ua1", out])
+        # veraPDF 1.30 can abort if a virtualized host clock steps backwards while
+        # its audit timer is running. Retry only that infrastructure exception;
+        # the second run must still produce the normal compliant verdict.
+        if r.returncode != 0 and "must not be > finish" in r.stderr:
+            r = run([VERAPDF, "--flavour", "ua1", out])
+        if r.returncode != 0:
+            raise BuildError(
+                f"{path}: veraPDF failed with exit {r.returncode}:\n{r.stderr.strip()}"
+            )
         if 'isCompliant="true"' not in r.stdout:
             raise BuildError(f"{path}: veraPDF reports NOT PDF/UA-1 compliant")
     else:
         require_verifier(path, "veraPDF", f"Expected at {VERAPDF}; set VERAPDF to override.")
     if shutil.which("pdftotext"):
-        if "​" in run(["pdftotext", "-nopgbrk", out, "-"]).stdout:
+        if "\u200b" in run(["pdftotext", "-nopgbrk", out, "-"]).stdout:
             raise BuildError(f"{path}: copy-safe check failed - zero-width spaces in the text layer")
     else:
         require_verifier(path, "pdftotext", "Install poppler-utils.")
@@ -221,7 +230,8 @@ def build_one(path, output=None, project_root=WS):
     project_root = os.path.abspath(project_root)
     if not os.path.isdir(project_root):
         raise BuildError(f"{path}: project root is not a directory: {project_root}")
-    meta, body = split_front_matter(open(path, encoding="utf-8").read(), path)
+    with open(path, encoding="utf-8") as source:
+        meta, body = split_front_matter(source.read(), path)
     doctype = meta.get("doctype")
     if doctype not in DOCTYPES:
         raise BuildError(f"{path}: doctype must be one of {list(DOCTYPES)}, got {doctype!r}")
@@ -231,11 +241,11 @@ def build_one(path, output=None, project_root=WS):
     stem = os.path.splitext(os.path.basename(path))[0]
     builddir = os.path.join(project_root, ".factory-build", stem)
     os.makedirs(builddir, exist_ok=True)
-    open(os.path.join(builddir, "body.md"), "w", encoding="utf-8").write(body)
+    with open(os.path.join(builddir, "body.md"), "w", encoding="utf-8") as body_file:
+        body_file.write(body)
     wrapper = os.path.join(builddir, "wrapper.typ")
-    open(wrapper, "w", encoding="utf-8").write(
-        build_wrapper(meta, doctype, project_root)
-    )
+    with open(wrapper, "w", encoding="utf-8") as wrapper_file:
+        wrapper_file.write(build_wrapper(meta, doctype, project_root))
 
     out = output or os.path.join(os.path.dirname(os.path.abspath(path)), stem + ".pdf")
     os.makedirs(os.path.dirname(os.path.abspath(out)), exist_ok=True)
@@ -260,7 +270,10 @@ def collect_inputs(inputs):
 def project_root_for(path):
     """Use the input's Git worktree as the owner of assets and build intermediates."""
     directory = os.path.dirname(os.path.abspath(path))
-    r = run(["git", "-C", directory, "rev-parse", "--show-toplevel"])
+    try:
+        r = run(["git", "-C", directory, "rev-parse", "--show-toplevel"])
+    except FileNotFoundError:
+        return WS
     if r.returncode == 0 and r.stdout.strip():
         return os.path.abspath(r.stdout.strip())
     return WS

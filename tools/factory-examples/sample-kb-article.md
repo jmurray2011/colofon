@@ -11,6 +11,9 @@ support-note: If the steps below do not resolve it, contact Support with the
   export ID from the error banner.
 ---
 
+> Fictional, AI-generated document created for example purposes. Names, organizations,
+> systems, events, and data are not real.
+
 # Symptoms
 
 An export runs for a while and then stops with a `gateway timeout` banner. The

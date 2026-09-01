@@ -10,7 +10,7 @@
     alt: "Acme logo",
   ),
   form-id: "ACME-INTK-04",
-  intro: [Complete one form per project. Fields can be filled on screen or by hand.],
+  intro: [This fictional, AI-generated document was created for example purposes. Names, organizations, systems, events, and data are not real. Complete one form per project. Fields can be filled on screen or by hand.],
 )
 
 = Requester details

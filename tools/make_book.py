@@ -64,10 +64,13 @@ def root_abs(path, project_root):
 def project_root_for(path):
     """Use the input's Git worktree as the asset/build root when available."""
     directory = os.path.dirname(os.path.abspath(path))
-    r = subprocess.run(
-        ["git", "-C", directory, "rev-parse", "--show-toplevel"],
-        capture_output=True, text=True,
-    )
+    try:
+        r = subprocess.run(
+            ["git", "-C", directory, "rev-parse", "--show-toplevel"],
+            capture_output=True, text=True, check=False,
+        )
+    except FileNotFoundError:
+        return WS
     return os.path.abspath(r.stdout.strip()) if r.returncode == 0 and r.stdout.strip() else WS
 
 
@@ -98,7 +101,8 @@ def main():
         die(f"project root is not a directory: {project_root}")
     import yaml
 
-    spec = yaml.safe_load(open(a.book, encoding="utf-8")) or {}
+    with open(a.book, encoding="utf-8") as book_file:
+        spec = yaml.safe_load(book_file) or {}
     base = os.path.dirname(os.path.abspath(a.book))
 
     if not spec.get("title"):
@@ -122,10 +126,12 @@ def main():
     # plain-English preflight (alt text, dangling cross-refs, missing/stale screenshots)
     import bookmd_lint
 
-    chapter_files = [
-        (os.path.join(base, c), open(os.path.join(base, c), encoding="utf-8").read())
-        for p in parts for c in p["chapters"]
-    ]
+    chapter_files = []
+    for part in parts:
+        for chapter in part["chapters"]:
+            chapter_path = os.path.join(base, chapter)
+            with open(chapter_path, encoding="utf-8") as chapter_file:
+                chapter_files.append((chapter_path, chapter_file.read()))
     problems, known = bookmd_lint.lint(chapter_files)
     if bookmd_lint.report(problems, known):
         die("fix the content problem(s) above, then rebuild")
@@ -136,7 +142,8 @@ def main():
         vf = os.path.join(base, spec["vars-from"])
         if not os.path.isfile(vf):
             die(f"{a.book}: vars-from not found: {spec['vars-from']}")
-        variables.update(yaml.safe_load(open(vf, encoding="utf-8")) or {})
+        with open(vf, encoding="utf-8") as variables_file:
+            variables.update(yaml.safe_load(variables_file) or {})
     variables.update(spec.get("vars") or {})
 
     stem = os.path.splitext(os.path.basename(a.book))[0]
@@ -151,7 +158,8 @@ def main():
     proc = {}
     for idx, (path, text) in enumerate(chapter_files):
         pp = os.path.join(builddir, f"{idx:02d}-{os.path.basename(path)}")
-        open(pp, "w", encoding="utf-8").write(subst(text, variables, unknown))
+        with open(pp, "w", encoding="utf-8") as processed_file:
+            processed_file.write(subst(text, variables, unknown))
         proc[path] = root_abs(pp, project_root)
     if unknown:
         die(f"undefined variable(s) used as {{{{...}}}}: {sorted(unknown)} - define them in 'vars' or 'vars-from'")
@@ -209,7 +217,8 @@ def main():
         body.append("")
 
     main_typ = os.path.join(os.path.dirname(builddir), "main.typ")
-    open(main_typ, "w", encoding="utf-8").write("\n".join(head + body) + "\n")
+    with open(main_typ, "w", encoding="utf-8") as typst_file:
+        typst_file.write("\n".join(head + body) + "\n")
     out = a.output or os.path.join(base, stem + ".pdf")
     os.makedirs(os.path.dirname(os.path.abspath(out)), exist_ok=True)
 
@@ -218,16 +227,26 @@ def main():
         TYPST, "compile", "--root", project_root,
         "--package-path", PACKAGES, "--package-cache-path", PACKAGES,
         "--font-path", FONTS, "--pdf-standard", "ua-1", main_typ, out,
-    ], capture_output=True, text=True)
+    ], capture_output=True, text=True, check=False)
     if r.returncode != 0:
         die(f"compile failed:\n{r.stderr.strip()}")
-    if re.search(r"warning", r.stderr, re.I):
+    if re.search(r"warning", r.stderr, re.IGNORECASE):
         die(f"compile produced warnings (gate fails):\n{r.stderr.strip()}")
     print(">> compiled under PDF/UA-1")
     if os.path.exists(VERAPDF):
-        if 'isCompliant="true"' not in subprocess.run(
-            [VERAPDF, "--flavour", "ua1", out], capture_output=True, text=True
-        ).stdout:
+        verifier = subprocess.run(
+            [VERAPDF, "--flavour", "ua1", out], capture_output=True, text=True,
+            check=False,
+        )
+        # See make_doc.gate: retry only veraPDF's virtual-clock audit exception.
+        if verifier.returncode != 0 and "must not be > finish" in verifier.stderr:
+            verifier = subprocess.run(
+                [VERAPDF, "--flavour", "ua1", out], capture_output=True, text=True,
+                check=False,
+            )
+        if verifier.returncode != 0:
+            die(f"veraPDF failed with exit {verifier.returncode}:\n{verifier.stderr.strip()}")
+        if 'isCompliant="true"' not in verifier.stdout:
             die("veraPDF: NOT PDF/UA-1 compliant")
         print(">> PDF/UA-1: compliant")
     elif ALLOW_UNVERIFIED:
@@ -236,7 +255,12 @@ def main():
         die(f"veraPDF not found at {VERAPDF} - cannot verify PDF/UA-1. Set VERAPDF, "
             f"or COLOFON_ALLOW_UNVERIFIED=1 to build without verification.")
     if shutil.which("pdftotext"):
-        if "​" in subprocess.run(["pdftotext", "-nopgbrk", out, "-"], capture_output=True, text=True).stdout:
+        if "\u200b" in subprocess.run(
+            ["pdftotext", "-nopgbrk", out, "-"],
+            capture_output=True,
+            text=True,
+            check=False,
+        ).stdout:
             die("copy-safe: zero-width spaces in the text layer")
         print(">> copy-safe: no zero-width spaces in the text layer")
     elif ALLOW_UNVERIFIED:

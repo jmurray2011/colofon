@@ -20,13 +20,14 @@ brand's documents.
 ```sh
 tools/make_doc.py  doc.md [-o out.pdf]     # Markdown + YAML front matter -> a standalone document
 tools/make_book.py book.yaml [-o out.pdf]  # a YAML outline + Markdown chapters -> a full book()
-tools/make_form.py form.typ [-o out.pdf]   # a Typst form -> a fillable AcroForm PDF
+tools/make_form.py form.typ [-o out.pdf]   # optional AGPL extra -> a fillable AcroForm PDF
 tools/bookmd_lint.py chapter.md ...        # plain-English preflight: alt text, dangling refs, stale shots
 ```
 
 Markdown documents compile to **PDF/UA-1** with no warnings and are checked copy-paste-safe
 (no zero-width spaces). `./build.sh` builds the examples in `tools/factory-examples/` as a
-self-test. Fillable forms have a separate accessibility limitation described below.
+self-test. `tools/colofon test` runs the unit suite and then that complete build gate.
+Fillable forms have a separate accessibility limitation described below.
 
 ## Authoring syntax
 
@@ -156,8 +157,9 @@ tools/make_book.py tools/factory-examples/book/book.yaml -o build/example-book.p
 ```
 
 Fillable forms use Typst source rather than Markdown; start from
-[`sample-form.typ`](tools/factory-examples/sample-form.typ). The added AcroForm widget
-layer is intentionally not gate-verified as PDF/UA-1.
+[`sample-form.typ`](tools/factory-examples/sample-form.typ). They require the optional
+PyMuPDF extra, which is AGPL-3.0 or commercially licensed. The added AcroForm widget layer
+is intentionally not gate-verified as PDF/UA-1.
 
 ## Complete example suite
 
@@ -195,14 +197,22 @@ style version.
 
 - Typst 0.15.0 (`~/.local/bin/typst`)
 - veraPDF (`~/.local/verapdf/verapdf`) for the PDF/UA-1 check
-- python3 + PyYAML + PyMuPDF for the factory tools (`pip install -r tools/requirements.txt`)
+- python3 + PyYAML for the document and book factory
+  (`pip install -r tools/requirements.txt`)
+- PyMuPDF only for optional fillable forms
+  (`pip install -r tools/requirements-form.txt`; AGPL-3.0 or commercial terms apply)
 - `typstyle` (optional) for formatting
 
-## Container
+Contributors also need Ruff, ShellCheck, and actionlint for `./tools/check.sh`; CI installs
+its lint tools from pinned versions.
 
-The image contains Colofon, IBM Plex, Typst, veraPDF, Java, Python, PyYAML, PyMuPDF,
-Git, and `pdftotext`. Typst and veraPDF downloads are versioned and checksum-verified, so
-the image builds directly from a clean checkout without a local tool cache.
+## Container images
+
+The default image contains Colofon, IBM Plex, Typst, veraPDF, Java, Python, PyYAML, and
+`pdftotext`. It intentionally excludes PyMuPDF and does not provide fillable-form support.
+The Java base is digest-pinned, Python wheels are version- and hash-locked for both
+supported architectures, and Typst and veraPDF downloads are versioned and
+checksum-verified.
 
 ```sh
 docker build -t colofon:local .
@@ -210,11 +220,14 @@ docker run --rm colofon:local version
 docker run --rm colofon:local test
 ```
 
-Release images are published for AMD64 and ARM64 through GitHub Container Registry:
+Release images are published for AMD64 and ARM64 through GitHub Container Registry.
+Use `latest` for a quick trial or an immutable version tag for repeatable builds:
 
 ```sh
-docker pull ghcr.io/jmurray2011/colofon:0.1.0
-docker run --rm ghcr.io/jmurray2011/colofon:0.1.0 version
+docker pull ghcr.io/jmurray2011/colofon:latest
+docker run --rm ghcr.io/jmurray2011/colofon:latest version
+
+docker pull ghcr.io/jmurray2011/colofon:0.1.1
 ```
 
 Mount a document project at `/work` to build its sources. Outputs and `.factory-build/`
@@ -226,16 +239,41 @@ docker run --rm -v "$PWD:/work" -w /work colofon:local \
 
 docker run --rm -v "$PWD:/work" -w /work colofon:local \
   book book.yaml -o build/book.pdf
+```
 
-docker run --rm -v "$PWD:/work" -w /work colofon:local \
+### Fillable-form image (AGPL)
+
+Fillable forms are isolated in `ghcr.io/jmurray2011/colofon-form`. This combined image
+contains PyMuPDF and is explicitly distributed under AGPL-3.0-only. Its full license and
+corresponding-source offer are in [AGPL-COMPLIANCE.md](AGPL-COMPLIANCE.md).
+
+```sh
+docker build --target forms -t colofon-form:local .
+docker run --rm colofon-form:local test
+
+docker pull ghcr.io/jmurray2011/colofon-form:0.1.1
+docker run --rm -v "$PWD:/work" -w /work \
+  ghcr.io/jmurray2011/colofon-form:0.1.1 \
   form request.typ -o build/request.pdf
 ```
 
-The entrypoint also provides `lint`, `convert`, and `help`. On Linux, add
-`--user "$(id -u):$(id -g)"` when generated files should use the invoking user's IDs.
+The entrypoint also provides `lint`, `convert`, and `help`. The image runs as UID/GID
+1000 by default. On Linux hosts that use different IDs, add
+`--user "$(id -u):$(id -g)"` so generated files use the invoking user's ownership.
+
+## Project guidance
+
+- [CONTRIBUTING.md](CONTRIBUTING.md) covers development and pull requests.
+- [SECURITY.md](SECURITY.md) explains private vulnerability reporting.
+- [CHANGELOG.md](CHANGELOG.md) records user-visible changes.
+- [RELEASING.md](RELEASING.md) defines the immutable-tag release process.
 
 ## License
 
-Colofon-authored code is MIT -- see [LICENSE](LICENSE). Vendored packages under
+Colofon-authored code is MIT -- see [LICENSE](LICENSE). When distributed as part of the
+optional form image, it is additionally offered under AGPL-3.0-only as described in
+[AGPL-COMPLIANCE.md](AGPL-COMPLIANCE.md). Vendored packages under
 `packages/preview/` retain the licenses included in their package directories. IBM
 Plex is distributed under the SIL Open Font License in `engine/fonts/LICENSE.txt`.
+See [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) for the complete image dependency
+and license summary.

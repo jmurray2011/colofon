@@ -10,6 +10,9 @@ footer-note: Illustrative figures, not product defaults
 watermark: Sample
 ---
 
+> Fictional, AI-generated document created for example purposes. Names, organizations,
+> systems, events, and data are not real.
+
 # Source checks
 
 | Check | Pass | Flag |

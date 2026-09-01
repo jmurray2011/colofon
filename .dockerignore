@@ -1,4 +1,5 @@
 .git
+.github/
 .env
 .factory-build/
 .pytest_cache/

@@ -15,7 +15,8 @@ layer is added after compilation by PyMuPDF, so the fillable output is NOT
 guaranteed PDF/UA-1 - the static base is compiled UA-1, but the widget layer is
 not gate-verified. make_form prints the veraPDF verdict for transparency.
 
-Requires PyMuPDF (pip install --user PyMuPDF).
+Requires the optional AGPL-licensed PyMuPDF extra
+(`pip install -r tools/requirements-form.txt`).
 """
 import argparse
 import json
@@ -43,10 +44,13 @@ def die(msg):
 def project_root_for(path):
     """Use the input's Git worktree as the asset/build root when available."""
     directory = os.path.dirname(os.path.abspath(path))
-    r = subprocess.run(
-        ["git", "-C", directory, "rev-parse", "--show-toplevel"],
-        capture_output=True, text=True,
-    )
+    try:
+        r = subprocess.run(
+            ["git", "-C", directory, "rev-parse", "--show-toplevel"],
+            capture_output=True, text=True, check=False,
+        )
+    except FileNotFoundError:
+        return WS
     return os.path.abspath(r.stdout.strip()) if r.returncode == 0 and r.stdout.strip() else WS
 
 
@@ -58,7 +62,7 @@ def typst_common(project_root):
 def query(src, sel, project_root):
     r = subprocess.run(
         [TYPST, "query", *typst_common(project_root), src, sel, "--field", "value"],
-        capture_output=True, text=True,
+        capture_output=True, text=True, check=False,
     )
     if r.returncode != 0:
         die(f"typst query {sel} failed:\n{r.stderr.strip()}")
@@ -84,7 +88,8 @@ def main():
     try:
         import pymupdf as fitz
     except ImportError:
-        die("PyMuPDF is required (pip install --user PyMuPDF)")
+        die("PyMuPDF is required (pip install -r tools/requirements-form.txt); "
+            "its AGPL-3.0 or commercial license applies")
 
     stem = os.path.splitext(os.path.basename(a.input))[0]
     builddir = os.path.join(project_root, ".factory-build", stem)
@@ -96,11 +101,11 @@ def main():
     # 1. compile the static layout (UA-1 base)
     r = subprocess.run(
         [TYPST, "compile", *typst_common(project_root), "--pdf-standard", "ua-1", a.input, static],
-        capture_output=True, text=True,
+        capture_output=True, text=True, check=False,
     )
     if r.returncode != 0:
         die(f"compile failed:\n{r.stderr.strip()}")
-    if re.search(r"warning", r.stderr, re.I):
+    if re.search(r"warning", r.stderr, re.IGNORECASE):
         die(f"compile produced warnings (gate fails):\n{r.stderr.strip()}")
 
     # 2. read back the field geometry the formfield helper recorded
@@ -142,17 +147,19 @@ def main():
             n_text += 1
         page.add_widget(w)
 
-    try:
-        doc.need_appearances(True)  # let viewers regenerate field appearances
-    except Exception:
-        pass
+    doc.need_appearances(True)  # let viewers regenerate field appearances
     doc.save(out, deflate=True, garbage=4)
     doc.close()
     print(f">> built {out}: {n_text} text fields, {n_check} checkboxes")
 
     # 4. report (do not gate) the UA-1 status of the fillable output
     if os.path.exists(VERAPDF):
-        r = subprocess.run([VERAPDF, "--flavour", "ua1", out], capture_output=True, text=True)
+        r = subprocess.run(
+            [VERAPDF, "--flavour", "ua1", out],
+            capture_output=True,
+            text=True,
+            check=False,
+        )
         ok = 'isCompliant="true"' in r.stdout
         print(">> PDF/UA-1 (fillable output): " + (
             "compliant"

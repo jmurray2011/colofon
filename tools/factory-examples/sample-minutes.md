@@ -11,6 +11,9 @@ apologies:
   - Carol Clark
 ---
 
+> Fictional, AI-generated document created for example purposes. Names, organizations,
+> systems, events, and data are not real.
+
 # Roadmap review
 
 Agreed the next milestone and owners.

@@ -7,6 +7,9 @@ status: Stable
 subtitle: What changed in this release
 ---
 
+> Fictional, AI-generated document created for example purposes. Names, organizations,
+> systems, events, and data are not real.
+
 # 2.4.0
 
 ## Added

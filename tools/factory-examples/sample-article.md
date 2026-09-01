@@ -7,6 +7,9 @@ date: June 2026
 kicker-text: Engineering
 ---
 
+> Fictional, AI-generated document created for example purposes. Names, organizations,
+> systems, events, and data are not real.
+
 # The idea
 
 A flowing **article** rendered from Markdown through the `@local/house` *article*

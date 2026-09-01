@@ -11,6 +11,9 @@ discovered: June 2026
 owner: Security Team
 ---
 
+> Fictional, AI-generated document created for example purposes. Names, organizations,
+> systems, events, and data are not real.
+
 The login flow issues its session cookie without the `Secure` attribute, so the
 browser will send it over plain HTTP. On any mixed-content page or downgraded
 request the session identifier can be observed in transit.

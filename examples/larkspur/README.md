@@ -23,12 +23,20 @@ that supports one, keeping assets out of the style package.
 | [`book/book.yaml`](book/book.yaml) | YAML/Markdown book |
 | [`field-request.typ`](field-request.typ) | Fillable form |
 
-Build all eleven examples from the repository root:
+Build the ten core examples from the repository root:
 
 ```sh
 examples/larkspur/build.sh
 ```
 
+The fillable form uses the optional AGPL-licensed PyMuPDF extra. After installing
+`tools/requirements-form.txt`, include it explicitly:
+
+```sh
+examples/larkspur/build.sh --with-forms
+```
+
 PDFs are written to `examples/larkspur/build/`, which is gitignored. The Markdown and book
-outputs must pass the PDF/UA-1, no-warning, and copy-safety gates. The fillable form reports
-its accessibility result separately because its AcroForm widget layer is not gate-verified.
+outputs must pass the PDF/UA-1, no-warning, and copy-safety gates. When requested, the
+fillable form reports its accessibility result separately because its AcroForm widget
+layer is not gate-verified.
