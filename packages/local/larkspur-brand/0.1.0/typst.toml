@@ -1,0 +1,7 @@
+[package]
+name = "larkspur-brand"
+version = "0.1.0"
+entrypoint = "lib.typ"
+authors = ["Josh Murray"]
+license = "MIT"
+description = "A fictional field-station house style demonstrating Colofon branding."

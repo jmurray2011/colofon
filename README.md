@@ -157,6 +157,13 @@ Fillable forms use Typst source rather than Markdown; start from
 [`sample-form.typ`](tools/factory-examples/sample-form.typ). The added AcroForm widget
 layer is intentionally not gate-verified as PDF/UA-1.
 
+## Complete example suite
+
+[`examples/larkspur/`](examples/larkspur/) applies one fictional house style to a book,
+every Markdown doctype, and a fillable form. Its README links every source and explains how
+to build all eleven outputs. Every artifact identifies itself as fictional and AI-generated
+for example purposes; no external text or artwork was used.
+
 ## Branding
 
 Templates default to a neutral palette. To brand a document, pass a `theme`:

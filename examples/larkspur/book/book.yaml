@@ -1,0 +1,22 @@
+title: Larkspur Observer Field Guide
+subtitle: Safe and repeatable night operations
+vars-from: release.yaml
+version: "{{version}}"
+date: "{{season}}"
+logo: /examples/larkspur/assets/larkspur-logo.svg
+logo-alt: Larkspur Field Station logo
+brand: larkspur-brand
+parts:
+  - title: Prepare
+    blurb: Arrive ready, protect dark adaptation, and open the station safely.
+    chapters:
+      - chapters/01-arrival.md
+  - title: Observe
+    blurb: Record useful observations and preserve each session through transfer.
+    chapters:
+      - chapters/02-observing.md
+  - title: Reference
+    blurb: Compact checks for the field team.
+    appendix: true
+    chapters:
+      - chapters/a-checklists.md
