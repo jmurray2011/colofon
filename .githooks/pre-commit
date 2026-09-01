@@ -1,0 +1,15 @@
+#!/usr/bin/env bash
+# Lint staged Typst files with typstyle. No-op if typstyle isn't installed.
+# Vendored third-party packages (packages/preview/*) are excluded - they ship as-is.
+set -euo pipefail
+command -v typstyle >/dev/null 2>&1 || { echo "typstyle not installed; skipping format check"; exit 0; }
+fail=0
+while IFS= read -r f; do
+  [ -n "$f" ] || continue
+  if ! diff -q <(typstyle "$f") "$f" >/dev/null 2>&1; then
+    echo "typstyle: $f is not formatted (run: typstyle -i \"$f\")"
+    fail=1
+  fi
+done < <(git diff --cached --name-only --diff-filter=ACM | grep -E '\.typ$' | grep -vE '^packages/preview/' || true)
+[ "$fail" -eq 0 ] || echo "pre-commit: format check failed; format the files above and re-stage."
+exit "$fail"

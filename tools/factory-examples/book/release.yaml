@@ -1,0 +1,4 @@
+# Single-source release variables. Bump these once; every book that reads this file
+# (via book.yaml's `vars-from`) updates, and chapters reference them as {{version}}.
+version: 1.4.0
+rpm: acme-relay-1.4.0-1.x86_64.rpm

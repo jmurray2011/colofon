@@ -1,0 +1,7 @@
+[package]
+name = "bookmd"
+version = "0.1.0"
+entrypoint = "lib.typ"
+authors = ["Josh Murray"]
+license = "MIT"
+description = "Author book chapters in Markdown. Maps Markdown onto the house cmd / callout / cross-reference / figure constructs (via cmarker), so non-engineers can write book-grade content without Typst."

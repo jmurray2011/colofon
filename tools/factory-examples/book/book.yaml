@@ -1,0 +1,20 @@
+# A whole book as data: parts -> Markdown chapters, in order. Build with:
+#   tools/make_book.py tools/factory-examples/book/book.yaml -o book.pdf
+title: Acme Relay
+subtitle: Setup and Configuration (book-md demo)
+vars-from: release.yaml
+version: "{{version}}"
+date: June 2026
+logo: /tools/factory-examples/assets/example-logo.png
+logo-alt: Acme logo
+brand: sample-brand
+parts:
+  - title: Install
+    blurb: Stand up the software and complete its initial configuration.
+    chapters:
+      - ../sample-chapter.md
+  - title: Configure
+    blurb: Wire up TLS termination and single sign-on.
+    chapters:
+      - tls.md
+      - sso.md

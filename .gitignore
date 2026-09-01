@@ -1,0 +1,28 @@
+# build artifacts
+**/build/
+.factory-build/
+tools/factory-examples/**/*.pdf
+
+# editor / OS noise
+.DS_Store
+*.swp
+*~
+
+# typst cache, if any
+.typst-cache/
+
+# python bytecode from the tools/
+__pycache__/
+*.pyc
+.pytest_cache/
+.ruff_cache/
+
+# vendored build-image toolcache (populated by tools/prepare-toolcache.sh)
+tools/.toolcache/
+
+# machine-local working context and design/authoring notes - kept on disk, out of history
+/CLAUDE.md
+**/notes/
+
+# machine-specific config (deploy paths, tool overrides) - copy .env.example to .env
+/.env

@@ -1,0 +1,5 @@
+# keep the build context small: the repo is bind-mounted at run time, so the image
+# only needs the vendored toolcache that the Dockerfile COPYs.
+.git
+**/build/
+engine/fonts

@@ -1,0 +1,7 @@
+[package]
+name = "sample-brand"
+version = "0.1.0"
+entrypoint = "lib.typ"
+authors = ["Josh Murray"]
+license = "MIT"
+description = "A demo brand for the house style: a theme palette + colophon, exposed as book-args to spread into a template."
