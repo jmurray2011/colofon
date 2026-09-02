@@ -1,0 +1,13 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": ["api_version", "dry_run", "files", "kind", "ok", "target"],
+  "properties": {
+    "api_version": {"const": "1"},
+    "dry_run": {"type": "boolean"},
+    "files": {"type": "array", "items": {"type": "string"}},
+    "kind": {"const": "project-init"},
+    "ok": {"const": true},
+    "target": {"type": "string"}
+  }
+}

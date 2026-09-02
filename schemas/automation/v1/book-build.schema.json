@@ -1,0 +1,14 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": ["api_version", "artifact", "checks", "kind", "ok", "source"],
+  "properties": {
+    "api_version": {"const": "1"},
+    "artifact": {"$ref": "common.schema.json#/$defs/artifact"},
+    "checks": {"$ref": "common.schema.json#/$defs/checks"},
+    "errors": {"type": "array", "items": {"$ref": "common.schema.json#/$defs/error"}},
+    "kind": {"const": "book-build"},
+    "ok": {"const": true},
+    "source": {"type": "string"}
+  }
+}

@@ -1,0 +1,44 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$defs": {
+    "artifact": {
+      "type": "object",
+      "required": ["bytes", "path", "sha256"],
+      "properties": {
+        "bytes": {"type": "integer", "minimum": 0},
+        "path": {"type": "string"},
+        "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+      }
+    },
+    "build_result": {
+      "type": "object",
+      "required": ["api_version", "artifact", "checks", "kind", "ok", "source"],
+      "properties": {
+        "api_version": {"const": "1"},
+        "artifact": {"$ref": "common.schema.json#/$defs/artifact"},
+        "checks": {"$ref": "common.schema.json#/$defs/checks"},
+        "kind": {"enum": ["book-build", "document-build"]},
+        "ok": {"const": true},
+        "source": {"type": "string"}
+      }
+    },
+    "checks": {
+      "type": "object",
+      "required": ["copy_safe", "pdfua1", "typst_pdfua1", "verified"],
+      "properties": {
+        "copy_safe": {"enum": ["pass", "not-run"]},
+        "pdfua1": {"enum": ["pass", "not-run"]},
+        "typst_pdfua1": {"const": "pass"},
+        "verified": {"type": "boolean"}
+      }
+    },
+    "error": {
+      "type": "object",
+      "required": ["message"],
+      "properties": {
+        "message": {"type": "string"},
+        "source": {"type": "string"}
+      }
+    }
+  }
+}

@@ -1,0 +1,24 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": ["api_version", "defined_ids", "kind", "ok", "problems"],
+  "properties": {
+    "api_version": {"const": "1"},
+    "defined_ids": {"type": "array", "items": {"type": "string"}},
+    "kind": {"const": "markdown-lint"},
+    "ok": {"const": true},
+    "problems": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["line", "message", "severity", "source"],
+        "properties": {
+          "line": {"type": "integer", "minimum": 1},
+          "message": {"type": "string"},
+          "severity": {"enum": ["error", "warning"]},
+          "source": {"type": "string"}
+        }
+      }
+    }
+  }
+}
