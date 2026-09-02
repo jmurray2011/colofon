@@ -10,6 +10,7 @@ import sys
 EXPECTED_TOOLS = {
     "colofon_build_book",
     "colofon_build_document",
+    "colofon_describe",
     "colofon_lint",
 }
 
@@ -75,22 +76,27 @@ def main():
         initialized = receive(process)
         if initialized.get("id") != 1 or "result" not in initialized:
             raise RuntimeError(f"initialize failed: {initialized}")
+        if "colofon_describe" not in initialized["result"].get("instructions", ""):
+            raise RuntimeError(f"initialize omitted Colofon workflow instructions: {initialized}")
         send(process, {"jsonrpc": "2.0", "method": "notifications/initialized"})
         send(process, {"jsonrpc": "2.0", "id": 2, "method": "tools/list", "params": {}})
         listed = receive(process)
         tools = {tool["name"] for tool in listed.get("result", {}).get("tools", [])}
         if tools != EXPECTED_TOOLS:
             raise RuntimeError(f"tools/list returned {sorted(tools)}, expected {sorted(EXPECTED_TOOLS)}")
-        call(process, 3, "colofon_lint", {
+        described = call(process, 3, "colofon_describe", {})
+        if "report" not in described.get("document_schemas", {}):
+            raise RuntimeError(f"describe omitted document schemas: {described}")
+        call(process, 4, "colofon_lint", {
             "sources": ["tools/factory-examples/sample-report.md"],
         })
-        document = call(process, 4, "colofon_build_document", {
+        document = call(process, 5, "colofon_build_document", {
             "source": "tools/factory-examples/sample-report.md",
             "output": "build/mcp-smoke-report.pdf",
         })
         if not document.get("results", [{}])[0].get("checks", {}).get("verified"):
             raise RuntimeError(f"document result was not verified: {document}")
-        book = call(process, 5, "colofon_build_book", {
+        book = call(process, 6, "colofon_build_book", {
             "source": "tools/factory-examples/book/book.yaml",
             "output": "build/mcp-smoke-book.pdf",
         })

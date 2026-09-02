@@ -22,6 +22,16 @@ BOOK_SCHEMA = {
     "part_optional": ["appendix", "blurb"],
 }
 
+SCHEMA_PATHS = {
+    "book-build": "schemas/automation/v1/book-build.schema.json",
+    "describe": "schemas/automation/v1/describe.schema.json",
+    "doctor": "schemas/automation/v1/doctor.schema.json",
+    "document-build": "schemas/automation/v1/document-build.schema.json",
+    "failure": "schemas/automation/v1/failure.schema.json",
+    "lint": "schemas/automation/v1/lint.schema.json",
+    "project-init": "schemas/automation/v1/project-init.schema.json",
+}
+
 
 def description():
     doctypes = {}
@@ -40,6 +50,7 @@ def description():
             "book": True,
             "document": True,
             "fillable_form": importlib.util.find_spec("pymupdf") is not None,
+            "init": True,
             "lint": True,
             "mcp": True,
         },
@@ -47,6 +58,7 @@ def description():
         "factory_version": automation.FACTORY_VERSION,
         "kind": "description",
         "ok": True,
+        "schema_paths": SCHEMA_PATHS,
     }
 
 

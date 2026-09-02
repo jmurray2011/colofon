@@ -1,0 +1,15 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": ["api_version", "book_schema", "capabilities", "document_schemas", "factory_version", "kind", "ok", "schema_paths"],
+  "properties": {
+    "api_version": {"const": "1"},
+    "book_schema": {"type": "object"},
+    "capabilities": {"type": "object", "additionalProperties": {"type": "boolean"}},
+    "document_schemas": {"type": "object", "additionalProperties": {"type": "object"}},
+    "factory_version": {"type": "string"},
+    "kind": {"const": "description"},
+    "ok": {"const": true},
+    "schema_paths": {"type": "object", "additionalProperties": {"type": "string"}}
+  }
+}

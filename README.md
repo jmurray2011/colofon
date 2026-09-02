@@ -15,6 +15,45 @@ brand's documents.
 | `engine/fonts/` | IBM Plex (Serif / Sans / Mono), passed to Typst via `--font-path`. |
 | `tools/` | The factory CLIs and the copy-safe gate. |
 
+## Quick start
+
+Create a complete neutral starter project, then build its verified report and book with
+the released container:
+
+```sh
+mkdir my-documents && cd my-documents
+docker run --rm --user "$(id -u):$(id -g)" -v "$PWD:/work" \
+  ghcr.io/jmurray2011/colofon:0.3.0 init .
+docker run --rm --user "$(id -u):$(id -g)" -v "$PWD:/work" \
+  ghcr.io/jmurray2011/colofon:0.3.0 doc documents/example-report.md \
+  -o build/example-report.pdf
+```
+
+`init` never overwrites an existing file. Use `--kind document` or `--kind book` for a
+smaller project, `--doctype memo` (or another supported doctype) to change the standalone
+starter, and `--brand example-studio` to include a consumer-local starter brand. Add
+`--dry-run` to inspect the planned files without writing them.
+
+The `--user` option keeps generated files owned by you on Linux. Docker Desktop users on
+macOS or Windows can omit `--user "$(id -u):$(id -g)"`; `$PWD` works in PowerShell, while
+Command Prompt users should replace it with an absolute path.
+
+## What it produces
+
+These previews are rendered from the checked-in Larkspur sources. The house style,
+organization, content, and data are fictional and AI-generated for example purposes.
+
+| Field-guide cover | Chapter page |
+| --- | --- |
+| ![Cover of the fictional Larkspur Observer Field Guide.](docs/images/larkspur-field-guide-cover.png) | ![A fictional Larkspur field-guide chapter showing headings, body text, and a note callout.](docs/images/larkspur-field-guide-chapter.png) |
+
+![A fictional landscape Larkspur station one-page overview.](docs/images/larkspur-onepager.png)
+
+Sources: [`book/book.yaml`](examples/larkspur/book/book.yaml),
+[`01-arrival.md`](examples/larkspur/book/chapters/01-arrival.md), and
+[`onepager.md`](examples/larkspur/documents/onepager.md). Regenerate these images with
+`examples/larkspur/render-gallery.sh`.
+
 ## The factory
 
 ```sh
@@ -38,6 +77,7 @@ result:
 ```sh
 tools/colofon describe --json
 tools/colofon doctor --json
+tools/colofon init new-project --brand example-studio --json
 tools/colofon lint --json chapters/intro.md chapters/operate.md
 tools/colofon doc report.md -o build/report.pdf --json
 tools/colofon book book.yaml -o build/book.pdf --json
@@ -49,6 +89,11 @@ configured Typst, veraPDF, `pdftotext`, and Python executables without building 
 Build results include the absolute artifact path, byte size, SHA-256 digest, and individual
 PDF/UA-1 and copy-safety verdicts. The top-level `api_version` is the compatibility boundary
 for machine consumers; it is independent of the Colofon release version.
+
+Published Draft 2020-12 schemas for every successful automation result and the common
+failure envelope are under [`schemas/automation/v1/`](schemas/automation/v1/). `describe`
+returns their repository-relative paths so an integration can discover the contract that
+matches the running factory.
 
 A successful document result has this shape (values shortened here):
 
@@ -75,8 +120,9 @@ A successful document result has this shape (values shortened here):
 ## MCP server
 
 `colofon-mcp` is a small local stdio server built with the official MCP Go SDK. It exposes
-exactly three core tools:
+four core tools and startup instructions describing the safe authoring workflow:
 
+- `colofon_describe` returns the current authoring schemas, versions, and capabilities.
 - `colofon_lint` reads and checks one or more Markdown files.
 - `colofon_build_document` builds and verifies one standalone Markdown document.
 - `colofon_build_book` builds and verifies one YAML/Markdown book.
@@ -100,7 +146,7 @@ open and an absolute host project path mounted at `/work`:
       "args": [
         "run", "--rm", "-i",
         "-v", "/absolute/path/to/document-project:/work",
-        "ghcr.io/jmurray2011/colofon:0.2.1",
+        "ghcr.io/jmurray2011/colofon:0.3.0",
         "mcp", "--stdio", "--workspace", "/work"
       ]
     }
@@ -275,12 +321,25 @@ omit keeps the neutral default. Fonts and the neutral grays are shared engine de
 Keep a brand in its own package (a small `.typ` that exports a `theme` dict + the logo) and
 import it, so the brand lives in one place across every document.
 
-## Using the style in a document repo
+## Using Colofon in another repository
 
-A consumer repo vendors `packages/local/house/` and `engine/fonts/`, then builds with
-`--package-path packages --font-path engine/fonts` (see any consumer's `build.sh`). Source files
-`#import "@local/house:0.1.0": *`. Bumping the vendored copy is how a consumer adopts a new
-style version.
+The recommended container-first setup keeps only your Markdown/YAML sources, assets, and
+optional brand package in the document repository. The released image supplies Colofon's
+engine, fonts, Typst, veraPDF, and other build dependencies. `colofon init` creates this
+layout; pinning the image tag makes its output repeatable. You do not need to copy Colofon's
+house package or fonts into each consumer repository.
+
+Consumer-owned brands are the deliberate exception. Keep a small package such as
+`packages/local/example-studio/0.1.0/` beside the documents and set
+`brand: example-studio` in front matter or `book.yaml`. The container discovers that
+package through the mounted project while retaining the shared house engine inside the
+image.
+
+For fully native or offline builds without Docker, vendor the required
+`packages/local/house/`, `packages/local/bookmd/`, preview packages, and `engine/fonts/`,
+then invoke the factory with its host dependencies installed. Treat this as an advanced
+distribution mode: record the vendored Colofon release and update the whole dependency set
+together rather than copying individual files opportunistically.
 
 ## Requirements
 
@@ -317,7 +376,7 @@ Use `latest` for a quick trial or an immutable version tag for repeatable builds
 docker pull ghcr.io/jmurray2011/colofon:latest
 docker run --rm ghcr.io/jmurray2011/colofon:latest version
 
-docker pull ghcr.io/jmurray2011/colofon:0.2.1
+docker pull ghcr.io/jmurray2011/colofon:0.3.0
 ```
 
 Mount a document project at `/work` to build its sources. Outputs and `.factory-build/`
@@ -341,9 +400,9 @@ corresponding-source offer are in [AGPL-COMPLIANCE.md](AGPL-COMPLIANCE.md).
 docker build --target forms -t colofon-form:local .
 docker run --rm colofon-form:local test
 
-docker pull ghcr.io/jmurray2011/colofon-form:0.2.1
+docker pull ghcr.io/jmurray2011/colofon-form:0.3.0
 docker run --rm -v "$PWD:/work" -w /work \
-  ghcr.io/jmurray2011/colofon-form:0.2.1 \
+  ghcr.io/jmurray2011/colofon-form:0.3.0 \
   form request.typ -o build/request.pdf
 ```
 

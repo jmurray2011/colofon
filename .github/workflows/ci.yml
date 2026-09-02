@@ -90,6 +90,20 @@ jobs:
             "import importlib.util; assert importlib.util.find_spec('pymupdf') is None"
           test "$(docker image inspect colofon:test --format '{{ index .Config.Labels "org.opencontainers.image.licenses" }}')" = MIT
 
+      - name: Exercise blank-directory quick start
+        run: |
+          starter="$(mktemp -d)"
+          trap 'rm -rf "$starter"' EXIT
+          user="$(id -u):$(id -g)"
+          docker run --rm --user "$user" -v "$starter:/work" \
+            colofon:test init --brand example-studio .
+          docker run --rm --user "$user" -v "$starter:/work" \
+            colofon:test doc documents/example-report.md -o build/example-report.pdf
+          docker run --rm --user "$user" -v "$starter:/work" \
+            colofon:test book book/book.yaml -o build/example-book.pdf
+          test -s "$starter/build/example-report.pdf"
+          test -s "$starter/build/example-book.pdf"
+
       - name: Smoke-test core MCP server
         run: |
           test "$(docker run --rm --entrypoint /usr/local/bin/colofon-mcp colofon:test --help 2>&1 | head -1)" = "Usage of /usr/local/bin/colofon-mcp:"
@@ -159,12 +173,12 @@ jobs:
           severity: CRITICAL
 
   publish:
-    name: Publish release images
+    name: Publish release
     if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
     needs: test
     runs-on: ubuntu-latest
     permissions:
-      contents: read
+      contents: write
       packages: write
     steps:
       - name: Check out repository
@@ -243,3 +257,19 @@ jobs:
           cache-to: type=gha,mode=max,scope=forms
           provenance: mode=max
           sbom: true
+
+      - name: Fetch and verify corresponding source
+        run: python3 tools/release_assets.py release-assets
+
+      - name: Generate release notes
+        run: python3 tools/release_notes.py "$GITHUB_REF_NAME" > release-notes.md
+
+      - name: Create GitHub release with corresponding source
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" \
+            --verify-tag \
+            --title "Colofon $GITHUB_REF_NAME" \
+            --notes-file release-notes.md \
+            release-assets/*

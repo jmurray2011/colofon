@@ -5,6 +5,26 @@ repository releases; the versioned Typst packages declare their own compatible v
 
 ## Unreleased
 
+## 0.3.0 - 2026-09-01
+
+### Added
+
+- A self-describing MCP authoring surface with server workflow instructions and a
+  `colofon_describe` tool backed by the versioned automation API.
+- A safe, deterministic `colofon init` command for creating container-first document,
+  book, and optional consumer-brand starter projects without overwriting existing files.
+- A README gallery rendered reproducibly from the fictional, AI-generated Larkspur
+  field guide and one-page document.
+- Discoverable Draft 2020-12 JSON Schemas for description, diagnostics, lint, project
+  initialization, and document/book build results, with representative contract tests.
+- Automated, hash-verified corresponding-source attachments and changelog-derived notes
+  for tagged GitHub releases.
+
+### Changed
+
+- Clarified the recommended container-first consumer layout, including host ownership,
+  Docker Desktop, consumer-brand, and advanced native-vendoring guidance.
+
 ## 0.2.1 - 2026-09-01
 
 ### Fixed
@@ -58,7 +78,8 @@ repository releases; the versioned Typst packages declare their own compatible v
 - Added the fictional, AI-generated Larkspur example suite.
 - Published AMD64 and ARM64 container images through GitHub Container Registry.
 
-[Unreleased]: https://github.com/jmurray2011/colofon/compare/v0.2.1...HEAD
+[Unreleased]: https://github.com/jmurray2011/colofon/compare/v0.3.0...HEAD
+[0.3.0]: https://github.com/jmurray2011/colofon/releases/tag/v0.3.0
 [0.2.1]: https://github.com/jmurray2011/colofon/releases/tag/v0.2.1
 [0.2.0]: https://github.com/jmurray2011/colofon/releases/tag/v0.2.0
 [0.1.1]: https://github.com/jmurray2011/colofon/releases/tag/v0.1.1
