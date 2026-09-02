@@ -292,7 +292,7 @@ style version.
 - `typstyle` (optional) for formatting
 
 Contributors also need Ruff, ShellCheck, and actionlint for `./tools/check.sh`; CI installs
-its lint tools from pinned versions. Building the MCP server requires Go 1.25 or later.
+its lint tools from pinned versions. Building the MCP server requires Go 1.25.7 or later.
 
 ## Container images
 
