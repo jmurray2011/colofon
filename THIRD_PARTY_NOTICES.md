@@ -16,6 +16,9 @@ does not replace the licenses of the following dependencies and redistributed as
   AGPL-3.0-only. See [AGPL-COMPLIANCE.md](AGPL-COMPLIANCE.md) for the license and
   corresponding-source offer.
 - PyYAML is distributed under the MIT license.
+- The `colofon-mcp` binary uses the official MCP Go SDK and its Go dependencies under
+  their respective Apache-2.0, MIT, and BSD-style terms. Their complete license texts
+  are installed under `/usr/share/licenses/colofon-mcp/` in both container images.
 - Eclipse Temurin, Python, Poppler, and Ubuntu runtime packages retain their upstream
   licenses. Their installed license and copyright material remains in the image, including
   Java notices under `$JAVA_HOME/legal` and package notices under `/usr/share/doc/`.

@@ -29,6 +29,94 @@ Markdown documents compile to **PDF/UA-1** with no warnings and are checked copy
 self-test. `tools/colofon test` runs the unit suite and then that complete build gate.
 Fillable forms have a separate accessibility limitation described below.
 
+## Automation API
+
+The shell entrypoint has a versioned JSON contract for scripts, agents, and integrations.
+Human-readable output remains the default; add `--json` when another program consumes the
+result:
+
+```sh
+tools/colofon describe --json
+tools/colofon doctor --json
+tools/colofon lint --json chapters/intro.md chapters/operate.md
+tools/colofon doc report.md -o build/report.pdf --json
+tools/colofon book book.yaml -o build/book.pdf --json
+```
+
+`describe` returns the automation API and factory versions, every doctype's required and
+optional front-matter keys, the book schema, and enabled capabilities. `doctor` checks the
+configured Typst, veraPDF, `pdftotext`, and Python executables without building anything.
+Build results include the absolute artifact path, byte size, SHA-256 digest, and individual
+PDF/UA-1 and copy-safety verdicts. The top-level `api_version` is the compatibility boundary
+for machine consumers; it is independent of the Colofon release version.
+
+A successful document result has this shape (values shortened here):
+
+```json
+{
+  "api_version": "1",
+  "kind": "document-build",
+  "ok": true,
+  "results": [{
+    "artifact": {"bytes": 48210, "path": "/work/build/report.pdf", "sha256": "…"},
+    "checks": {
+      "copy_safe": "pass",
+      "pdfua1": "pass",
+      "typst_pdfua1": "pass",
+      "verified": true
+    },
+    "ok": true,
+    "source": "/work/report.md"
+  }],
+  "errors": []
+}
+```
+
+## MCP server
+
+`colofon-mcp` is a small local stdio server built with the official MCP Go SDK. It exposes
+exactly three core tools:
+
+- `colofon_lint` reads and checks one or more Markdown files.
+- `colofon_build_document` builds and verifies one standalone Markdown document.
+- `colofon_build_book` builds and verifies one YAML/Markdown book.
+
+The server receives an explicit workspace at startup. Tool arguments must be relative to
+that workspace; symlink escapes and absolute paths are rejected, and generated files are
+restricted to `build/`. Calls are serialized, time-limited, and delegated to the same
+factory commands and compliance gates used by the CLI. The server has no network transport
+and does not expose fillable forms or PyMuPDF.
+
+The released core container is the recommended distribution because it includes the MCP
+binary and the complete Colofon toolchain. Configure an MCP client to run it with stdin kept
+open and an absolute host project path mounted at `/work`:
+
+```json
+{
+  "mcpServers": {
+    "colofon": {
+      "command": "docker",
+      "args": [
+        "run", "--rm", "-i",
+        "-v", "/absolute/path/to/document-project:/work",
+        "ghcr.io/jmurray2011/colofon:0.2.0",
+        "mcp", "--stdio", "--workspace", "/work"
+      ]
+    }
+  }
+}
+```
+
+For host development, build the binary and launch it through the normal entrypoint:
+
+```sh
+go build -o bin/colofon-mcp ./cmd/colofon-mcp
+tools/colofon mcp --stdio --workspace /absolute/path/to/document-project
+```
+
+The bare binary is only an adapter: host use still requires the Python, Typst, veraPDF,
+fonts, and `pdftotext` dependencies listed below.
+
 ## Authoring syntax
 
 ### Standalone documents
@@ -204,7 +292,7 @@ style version.
 - `typstyle` (optional) for formatting
 
 Contributors also need Ruff, ShellCheck, and actionlint for `./tools/check.sh`; CI installs
-its lint tools from pinned versions.
+its lint tools from pinned versions. Building the MCP server requires Go 1.25 or later.
 
 ## Container images
 
@@ -218,6 +306,7 @@ checksum-verified.
 docker build -t colofon:local .
 docker run --rm colofon:local version
 docker run --rm colofon:local test
+docker run --rm -i -v "$PWD:/work" colofon:local mcp --workspace /work
 ```
 
 Release images are published for AMD64 and ARM64 through GitHub Container Registry.
@@ -227,7 +316,7 @@ Use `latest` for a quick trial or an immutable version tag for repeatable builds
 docker pull ghcr.io/jmurray2011/colofon:latest
 docker run --rm ghcr.io/jmurray2011/colofon:latest version
 
-docker pull ghcr.io/jmurray2011/colofon:0.1.1
+docker pull ghcr.io/jmurray2011/colofon:0.2.0
 ```
 
 Mount a document project at `/work` to build its sources. Outputs and `.factory-build/`
@@ -251,9 +340,9 @@ corresponding-source offer are in [AGPL-COMPLIANCE.md](AGPL-COMPLIANCE.md).
 docker build --target forms -t colofon-form:local .
 docker run --rm colofon-form:local test
 
-docker pull ghcr.io/jmurray2011/colofon-form:0.1.1
+docker pull ghcr.io/jmurray2011/colofon-form:0.2.0
 docker run --rm -v "$PWD:/work" -w /work \
-  ghcr.io/jmurray2011/colofon-form:0.1.1 \
+  ghcr.io/jmurray2011/colofon-form:0.2.0 \
   form request.typ -o build/request.pdf
 ```
 

@@ -35,3 +35,13 @@ updates:
         patterns: ["*"]
     commit-message:
       prefix: chore(python)
+
+  - package-ecosystem: gomod
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: "09:00"
+      timezone: America/Chicago
+    commit-message:
+      prefix: chore(go)

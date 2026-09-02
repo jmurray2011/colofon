@@ -13,6 +13,9 @@ Usage:
   colofon form <form.typ> [make_form options]  # optional AGPL form image/extra
   colofon lint <chapter.md>...
   colofon convert <chapter.typ>
+  colofon describe [--json]
+  colofon doctor [--json]
+  colofon mcp [--workspace <dir>]
   colofon test
   colofon version
 
@@ -68,6 +71,18 @@ case "${1:-help}" in
     shift
     exec python3 "$APP/tools/typ2md.py" "$@"
     ;;
+  describe|doctor)
+    command=$1
+    shift
+    exec python3 "$APP/tools/colofon_info.py" "$command" "$@"
+    ;;
+  mcp)
+    shift
+    if [[ -x "$APP/bin/colofon-mcp" ]]; then
+      exec "$APP/bin/colofon-mcp" --colofon "$APP/tools/colofon" "$@"
+    fi
+    exec /usr/local/bin/colofon-mcp --colofon "$APP/tools/colofon" "$@"
+    ;;
   test)
     shift
     cd "$APP"
@@ -80,7 +95,7 @@ case "${1:-help}" in
   version)
     typst_bin=${TYPST:-$HOME/.local/bin/typst}
     verapdf_bin=${VERAPDF:-$HOME/.local/verapdf/verapdf}
-    printf 'Colofon\n'
+    printf 'Colofon %s\n' "$(<"$APP/VERSION")"
     "$typst_bin" --version
     "$verapdf_bin" --version
     python3 --version

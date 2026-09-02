@@ -38,6 +38,9 @@ import shutil
 import subprocess
 import sys
 
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import automation
+
 WS = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 TYPST = os.environ.get("TYPST", os.path.expanduser("~/.local/bin/typst"))
 VERAPDF = os.environ.get("VERAPDF", os.path.expanduser("~/.local/verapdf/verapdf"))
@@ -46,9 +49,14 @@ PACKAGES = os.environ.get("COLOFON_PACKAGES", os.path.join(WS, "packages"))
 # A missing verifier fails the build. Opting out has to be deliberate, because a
 # book that reports success having verified nothing is worse than no book.
 ALLOW_UNVERIFIED = os.environ.get("COLOFON_ALLOW_UNVERIFIED") == "1"
+JSON_OUTPUT = False
+JSON_SOURCE = None
 
 
 def die(msg):
+    if JSON_OUTPUT:
+        automation.emit(automation.failure("book-build", msg, JSON_SOURCE))
+        sys.exit(1)
     print(f"make_book: {msg}", file=sys.stderr)
     sys.exit(2)
 
@@ -86,6 +94,7 @@ def subst(text, variables, unknown):
 
 
 def main():
+    global JSON_OUTPUT, JSON_SOURCE
     ap = argparse.ArgumentParser(description="assemble a book from book.yaml + Markdown chapters")
     ap.add_argument("book", help="the book.yaml outline")
     ap.add_argument("-o", "--output")
@@ -93,7 +102,10 @@ def main():
         "--root",
         help="Typst project root and .factory-build owner (default: the input's Git worktree)",
     )
+    ap.add_argument("--json", action="store_true", help="emit a structured result")
     a = ap.parse_args()
+    JSON_OUTPUT = a.json
+    JSON_SOURCE = a.book
     if not os.path.isfile(a.book):
         die(f"no such file: {a.book}")
     project_root = os.path.abspath(a.root or project_root_for(a.book))
@@ -232,7 +244,8 @@ def main():
         die(f"compile failed:\n{r.stderr.strip()}")
     if re.search(r"warning", r.stderr, re.IGNORECASE):
         die(f"compile produced warnings (gate fails):\n{r.stderr.strip()}")
-    print(">> compiled under PDF/UA-1")
+    if not a.json:
+        print(">> compiled under PDF/UA-1")
     if os.path.exists(VERAPDF):
         verifier = subprocess.run(
             [VERAPDF, "--flavour", "ua1", out], capture_output=True, text=True,
@@ -248,7 +261,8 @@ def main():
             die(f"veraPDF failed with exit {verifier.returncode}:\n{verifier.stderr.strip()}")
         if 'isCompliant="true"' not in verifier.stdout:
             die("veraPDF: NOT PDF/UA-1 compliant")
-        print(">> PDF/UA-1: compliant")
+        if not a.json:
+            print(">> PDF/UA-1: compliant")
     elif ALLOW_UNVERIFIED:
         print(">> WARNING PDF/UA-1: NOT VERIFIED - veraPDF missing", file=sys.stderr)
     else:
@@ -262,13 +276,19 @@ def main():
             check=False,
         ).stdout:
             die("copy-safe: zero-width spaces in the text layer")
-        print(">> copy-safe: no zero-width spaces in the text layer")
+        if not a.json:
+            print(">> copy-safe: no zero-width spaces in the text layer")
     elif ALLOW_UNVERIFIED:
         print(">> WARNING copy-safe: NOT VERIFIED - pdftotext missing", file=sys.stderr)
     else:
         die("pdftotext not found - cannot run the copy-safe check. Install poppler-utils, "
             "or set COLOFON_ALLOW_UNVERIFIED=1 to build without verification.")
-    print(f">> built {out} ({os.path.getsize(out)} bytes)")
+    if a.json:
+        automation.emit(automation.artifact_result(
+            "book-build", a.book, out, os.path.exists(VERAPDF), bool(shutil.which("pdftotext"))
+        ))
+    else:
+        print(f">> built {out} ({os.path.getsize(out)} bytes)")
 
 
 if __name__ == "__main__":
