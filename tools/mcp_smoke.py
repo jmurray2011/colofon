@@ -7,7 +7,6 @@ import selectors
 import subprocess
 import sys
 
-
 EXPECTED_TOOLS = {
     "colofon_build_book",
     "colofon_build_document",

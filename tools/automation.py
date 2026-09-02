@@ -5,7 +5,6 @@ import json
 import os
 import shutil
 
-
 API_VERSION = "1"
 FACTORY_VERSION = "0.2.0"
 

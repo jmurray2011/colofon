@@ -12,7 +12,6 @@ import sys
 import automation
 import make_doc
 
-
 BOOK_SCHEMA = {
     "required": ["parts", "title"],
     "optional": [
