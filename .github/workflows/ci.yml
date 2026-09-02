@@ -173,12 +173,12 @@ jobs:
           severity: CRITICAL
 
   publish:
-    name: Publish release images
+    name: Publish release
     if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
     needs: test
     runs-on: ubuntu-latest
     permissions:
-      contents: read
+      contents: write
       packages: write
     steps:
       - name: Check out repository
@@ -257,3 +257,19 @@ jobs:
           cache-to: type=gha,mode=max,scope=forms
           provenance: mode=max
           sbom: true
+
+      - name: Fetch and verify corresponding source
+        run: python3 tools/release_assets.py release-assets
+
+      - name: Generate release notes
+        run: python3 tools/release_notes.py "$GITHUB_REF_NAME" > release-notes.md
+
+      - name: Create GitHub release with corresponding source
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" \
+            --verify-tag \
+            --title "Colofon $GITHUB_REF_NAME" \
+            --notes-file release-notes.md \
+            release-assets/*

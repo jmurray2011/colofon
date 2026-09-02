@@ -15,6 +15,8 @@ repository releases; the versioned Typst packages declare their own compatible v
   field guide and one-page document.
 - Discoverable Draft 2020-12 JSON Schemas for description, diagnostics, lint, project
   initialization, and document/book build results, with representative contract tests.
+- Automated, hash-verified corresponding-source attachments and changelog-derived notes
+  for tagged GitHub releases.
 
 ## 0.2.1 - 2026-09-01
 

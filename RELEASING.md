@@ -35,10 +35,10 @@ container scan before release.
 
 1. Commit and push `main`; wait for CI to pass.
 2. Create and push an annotated tag: `git tag -a vX.Y.Z -m "Colofon vX.Y.Z"`.
-3. Wait for the tag workflow to test and publish both AMD64/ARM64 GHCR manifests.
-4. Create the GitHub release from the existing tag using the changelog entry as notes.
-   Attach the exact PyMuPDF and MuPDF source archives named in `AGPL-COMPLIANCE.md`.
-5. Make both GHCR packages public. Verify anonymous pulls of
+3. Wait for the tag workflow to test, publish both AMD64/ARM64 GHCR manifests, create
+   release notes from the changelog, and attach the hash-verified corresponding-source
+   archives named in `tools/form-sources.json`.
+4. Make both GHCR packages public. Verify anonymous pulls of
    `ghcr.io/jmurray2011/colofon:X.Y.Z` and
    `ghcr.io/jmurray2011/colofon-form:X.Y.Z`, and inspect both architectures.
 
