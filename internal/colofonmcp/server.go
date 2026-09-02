@@ -21,12 +21,13 @@ import (
 const maxCommandOutput = 1024 * 1024
 
 const instructions = "Call colofon_describe before authoring to discover the current " +
-	"document and book schemas. Keep every source path relative to the configured workspace, " +
-	"lint Markdown before building, and write PDF outputs only below build/. Successful builds " +
-	"must report verified=true with pdfua1, typst_pdfua1, and copy_safe all passing."
+	"document and book schemas. Use colofon_init_project only to initialize the configured " +
+	"workspace; it never overwrites an existing file. Keep every source path relative to the " +
+	"workspace, lint Markdown before building, and write PDF outputs only below build/. " +
+	"Successful builds must report verified=true with pdfua1, typst_pdfua1, and copy_safe all passing."
 
 // Version is the Colofon release implemented by this server.
-const Version = "0.3.0"
+const Version = "0.4.0"
 
 type DocumentInput struct {
 	Source string `json:"source" jsonschema:"Markdown source path, relative to the configured workspace"`
@@ -43,6 +44,13 @@ type LintInput struct {
 }
 
 type DescribeInput struct{}
+
+type ProjectInitInput struct {
+	Kind    string `json:"kind,omitempty" jsonschema:"Starter content to create: document, book, or both; defaults to both"`
+	Doctype string `json:"doctype,omitempty" jsonschema:"Standalone starter doctype; defaults to report"`
+	Brand   string `json:"brand,omitempty" jsonschema:"Optional lowercase consumer-owned brand package name"`
+	DryRun  bool   `json:"dry_run,omitempty" jsonschema:"Report planned files without writing them"`
+}
 
 // Runner validates all paths and delegates work to Colofon's machine-facing CLI.
 type Runner struct {
@@ -291,6 +299,45 @@ func (r *Runner) describe(ctx context.Context, _ DescribeInput) (*mcp.CallToolRe
 	return toolResult(payload), payload, err
 }
 
+func allowed(value string, choices ...string) bool {
+	for _, choice := range choices {
+		if value == choice {
+			return true
+		}
+	}
+	return false
+}
+
+func (r *Runner) initProject(ctx context.Context, input ProjectInitInput) (*mcp.CallToolResult, map[string]any, error) {
+	kind := input.Kind
+	if kind == "" {
+		kind = "both"
+	}
+	if !allowed(kind, "document", "book", "both") {
+		return nil, nil, errors.New("kind must be document, book, or both")
+	}
+	doctype := input.Doctype
+	if doctype == "" {
+		doctype = "report"
+	}
+	if !allowed(doctype,
+		"report", "article", "minutes", "memo", "release-notes", "runbook",
+		"kb-article", "bug-report", "onepager",
+	) {
+		return nil, nil, errors.New("unsupported standalone doctype")
+	}
+	args := []string{"init", ".", "--kind", kind, "--doctype", doctype}
+	if input.Brand != "" {
+		args = append(args, "--brand", input.Brand)
+	}
+	if input.DryRun {
+		args = append(args, "--dry-run")
+	}
+	args = append(args, "--json")
+	payload, err := r.command(ctx, args...)
+	return toolResult(payload), payload, err
+}
+
 func boolPointer(value bool) *bool { return &value }
 
 // Server constructs the stdio MCP server with Colofon's core tools.
@@ -307,6 +354,41 @@ func Server(runner *Runner) *mcp.Server {
 		Annotations: &mcp.ToolAnnotations{ReadOnlyHint: true, OpenWorldHint: closed},
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, input DescribeInput) (*mcp.CallToolResult, map[string]any, error) {
 		return runner.describe(ctx, input)
+	})
+	mcp.AddTool(server, &mcp.Tool{
+		Name:        "colofon_init_project",
+		Title:       "Initialize a Colofon Project",
+		Description: "Create a fictional, AI-generated starter in the configured workspace without overwriting existing files.",
+		InputSchema: map[string]any{
+			"type":                 "object",
+			"additionalProperties": false,
+			"properties": map[string]any{
+				"kind": map[string]any{
+					"type": "string", "enum": []string{"document", "book", "both"},
+					"description": "Starter content to create; defaults to both.",
+				},
+				"doctype": map[string]any{
+					"type": "string",
+					"enum": []string{
+						"report", "article", "minutes", "memo", "release-notes", "runbook",
+						"kb-article", "bug-report", "onepager",
+					},
+					"description": "Standalone starter doctype; defaults to report.",
+				},
+				"brand": map[string]any{
+					"type": "string", "pattern": "^[a-z0-9][a-z0-9-]*$",
+					"description": "Optional lowercase consumer-owned brand package name.",
+				},
+				"dry_run": map[string]any{
+					"type": "boolean", "description": "Report planned files without writing them.",
+				},
+			},
+		},
+		Annotations: &mcp.ToolAnnotations{
+			DestructiveHint: boolPointer(false), IdempotentHint: false, OpenWorldHint: closed,
+		},
+	}, func(ctx context.Context, _ *mcp.CallToolRequest, input ProjectInitInput) (*mcp.CallToolResult, map[string]any, error) {
+		return runner.initProject(ctx, input)
 	})
 	mcp.AddTool(server, &mcp.Tool{
 		Name:        "colofon_lint",

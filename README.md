@@ -23,9 +23,9 @@ the released container:
 ```sh
 mkdir my-documents && cd my-documents
 docker run --rm --user "$(id -u):$(id -g)" -v "$PWD:/work" \
-  ghcr.io/jmurray2011/colofon:0.3.0 init .
+  ghcr.io/jmurray2011/colofon:0.4.0 init .
 docker run --rm --user "$(id -u):$(id -g)" -v "$PWD:/work" \
-  ghcr.io/jmurray2011/colofon:0.3.0 doc documents/example-report.md \
+  ghcr.io/jmurray2011/colofon:0.4.0 doc documents/example-report.md \
   -o build/example-report.pdf
 ```
 
@@ -120,15 +120,20 @@ A successful document result has this shape (values shortened here):
 ## MCP server
 
 `colofon-mcp` is a small local stdio server built with the official MCP Go SDK. It exposes
-four core tools and startup instructions describing the safe authoring workflow:
+five core tools and startup instructions describing the safe authoring workflow:
 
 - `colofon_describe` returns the current authoring schemas, versions, and capabilities.
+- `colofon_init_project` creates a fictional, AI-generated starter in the configured
+  workspace and refuses to overwrite any existing file. It accepts the same `kind`,
+  `doctype`, `brand`, and `dry_run` choices as the CLI initializer.
 - `colofon_lint` reads and checks one or more Markdown files.
 - `colofon_build_document` builds and verifies one standalone Markdown document.
 - `colofon_build_book` builds and verifies one YAML/Markdown book.
 
-The server receives an explicit workspace at startup. Tool arguments must be relative to
-that workspace; symlink escapes and absolute paths are rejected, including chapter,
+The server receives an explicit workspace at startup. Project initialization is restricted
+to that workspace; use a blank mounted directory when starting a new project. Other tool
+arguments must be relative to that workspace; symlink escapes and absolute paths are
+rejected, including chapter,
 variables-file, brand, and screenshot references discovered inside source files. Generated
 files are restricted to `build/`. Calls are serialized, time-limited, and delegated to the same
 factory commands and compliance gates used by the CLI. The server has no network transport
@@ -146,7 +151,7 @@ open and an absolute host project path mounted at `/work`:
       "args": [
         "run", "--rm", "-i",
         "-v", "/absolute/path/to/document-project:/work",
-        "ghcr.io/jmurray2011/colofon:0.3.0",
+        "ghcr.io/jmurray2011/colofon:0.4.0",
         "mcp", "--stdio", "--workspace", "/work"
       ]
     }
@@ -376,7 +381,7 @@ Use `latest` for a quick trial or an immutable version tag for repeatable builds
 docker pull ghcr.io/jmurray2011/colofon:latest
 docker run --rm ghcr.io/jmurray2011/colofon:latest version
 
-docker pull ghcr.io/jmurray2011/colofon:0.3.0
+docker pull ghcr.io/jmurray2011/colofon:0.4.0
 ```
 
 Mount a document project at `/work` to build its sources. Outputs and `.factory-build/`
@@ -400,9 +405,9 @@ corresponding-source offer are in [AGPL-COMPLIANCE.md](AGPL-COMPLIANCE.md).
 docker build --target forms -t colofon-form:local .
 docker run --rm colofon-form:local test
 
-docker pull ghcr.io/jmurray2011/colofon-form:0.3.0
+docker pull ghcr.io/jmurray2011/colofon-form:0.4.0
 docker run --rm -v "$PWD:/work" -w /work \
-  ghcr.io/jmurray2011/colofon-form:0.3.0 \
+  ghcr.io/jmurray2011/colofon-form:0.4.0 \
   form request.typ -o build/request.pdf
 ```
 
