@@ -5,6 +5,11 @@ repository releases; the versioned Typst packages declare their own compatible v
 
 ## Unreleased
 
+### Added
+
+- A non-overwriting `colofon_init_project` MCP tool that creates document, book, and
+  optional consumer-brand starters only in the server's configured workspace.
+
 ## 0.3.0 - 2026-09-01
 
 ### Added
