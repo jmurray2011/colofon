@@ -11,6 +11,8 @@ repository releases; the versioned Typst packages declare their own compatible v
   `colofon_describe` tool backed by the versioned automation API.
 - A safe, deterministic `colofon init` command for creating container-first document,
   book, and optional consumer-brand starter projects without overwriting existing files.
+- A README gallery rendered reproducibly from the fictional, AI-generated Larkspur
+  field guide and one-page document.
 
 ## 0.2.1 - 2026-09-01
 

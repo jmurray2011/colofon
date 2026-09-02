@@ -5,7 +5,8 @@ WS="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$WS"
 
 python3 -m ruff check tools tests
-shellcheck tools/colofon tools/check.sh build.sh examples/larkspur/build.sh .githooks/pre-commit
+shellcheck tools/colofon tools/check.sh build.sh examples/larkspur/build.sh \
+  examples/larkspur/render-gallery.sh .githooks/pre-commit
 actionlint .github/workflows/*.yml
 
 unformatted=$(gofmt -l cmd internal)

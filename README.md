@@ -34,6 +34,22 @@ smaller project, `--doctype memo` (or another supported doctype) to change the s
 starter, and `--brand example-studio` to include a consumer-local starter brand. Add
 `--dry-run` to inspect the planned files without writing them.
 
+## What it produces
+
+These previews are rendered from the checked-in Larkspur sources. The house style,
+organization, content, and data are fictional and AI-generated for example purposes.
+
+| Field-guide cover | Chapter page |
+| --- | --- |
+| ![Cover of the fictional Larkspur Observer Field Guide.](docs/images/larkspur-field-guide-cover.png) | ![A fictional Larkspur field-guide chapter showing headings, body text, and a note callout.](docs/images/larkspur-field-guide-chapter.png) |
+
+![A fictional landscape Larkspur station one-page overview.](docs/images/larkspur-onepager.png)
+
+Sources: [`book/book.yaml`](examples/larkspur/book/book.yaml),
+[`01-arrival.md`](examples/larkspur/book/chapters/01-arrival.md), and
+[`onepager.md`](examples/larkspur/documents/onepager.md). Regenerate these images with
+`examples/larkspur/render-gallery.sh`.
+
 ## The factory
 
 ```sh
