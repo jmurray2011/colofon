@@ -25,7 +25,7 @@ To work on optional fillable forms, deliberately install the AGPL-licensed extra
 python3 -m pip install -r tools/requirements-form.txt
 ```
 
-The static check script also expects Ruff, ShellCheck, actionlint, and Go 1.25 or later.
+The static check script also expects Ruff, ShellCheck, actionlint, and Go 1.25.7 or later.
 CI installs pinned versions; local equivalents are acceptable for development.
 
 ## Required checks

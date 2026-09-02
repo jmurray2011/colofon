@@ -1,6 +1,6 @@
 module github.com/jmurray2011/colofon
 
-go 1.25.0
+go 1.25.7
 
 require github.com/modelcontextprotocol/go-sdk v1.7.0
 
