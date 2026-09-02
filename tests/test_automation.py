@@ -36,6 +36,7 @@ class DescribeAndDoctor(unittest.TestCase):
             ],
         )
         self.assertNotIn("form", payload["document_schemas"])
+        self.assertTrue(payload["capabilities"]["init"])
 
     def test_doctor_reports_every_required_tool(self):
         _, payload = run_json("doctor", "--json")

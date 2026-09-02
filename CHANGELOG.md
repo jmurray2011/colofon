@@ -9,6 +9,8 @@ repository releases; the versioned Typst packages declare their own compatible v
 
 - A self-describing MCP authoring surface with server workflow instructions and a
   `colofon_describe` tool backed by the versioned automation API.
+- A safe, deterministic `colofon init` command for creating container-first document,
+  book, and optional consumer-brand starter projects without overwriting existing files.
 
 ## 0.2.1 - 2026-09-01
 

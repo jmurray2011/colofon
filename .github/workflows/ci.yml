@@ -90,6 +90,20 @@ jobs:
             "import importlib.util; assert importlib.util.find_spec('pymupdf') is None"
           test "$(docker image inspect colofon:test --format '{{ index .Config.Labels "org.opencontainers.image.licenses" }}')" = MIT
 
+      - name: Exercise blank-directory quick start
+        run: |
+          starter="$(mktemp -d)"
+          trap 'rm -rf "$starter"' EXIT
+          user="$(id -u):$(id -g)"
+          docker run --rm --user "$user" -v "$starter:/work" \
+            colofon:test init --brand example-studio .
+          docker run --rm --user "$user" -v "$starter:/work" \
+            colofon:test doc documents/example-report.md -o build/example-report.pdf
+          docker run --rm --user "$user" -v "$starter:/work" \
+            colofon:test book book/book.yaml -o build/example-book.pdf
+          test -s "$starter/build/example-report.pdf"
+          test -s "$starter/build/example-book.pdf"
+
       - name: Smoke-test core MCP server
         run: |
           test "$(docker run --rm --entrypoint /usr/local/bin/colofon-mcp colofon:test --help 2>&1 | head -1)" = "Usage of /usr/local/bin/colofon-mcp:"

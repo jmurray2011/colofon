@@ -40,6 +40,7 @@ def description():
             "book": True,
             "document": True,
             "fillable_form": importlib.util.find_spec("pymupdf") is not None,
+            "init": True,
             "lint": True,
             "mcp": True,
         },
