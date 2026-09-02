@@ -8,8 +8,8 @@ minor, or major version instead.
 1. Choose a Semantic Versioning release number and update `CHANGELOG.md`.
 2. If a versioned Typst package API changed, create its new version directory, update
    `typst.toml`, and update imports and examples. Do not rewrite an older package version.
-3. Review pinned Typst and veraPDF versions and checksums, the Temurin digest, and both
-   architecture hashes in `tools/requirements-container.txt` and
+3. Review pinned Typst, veraPDF, Go, and MCP SDK versions; container base digests and
+   checksums; and both architecture hashes in `tools/requirements-container.txt` and
    `tools/requirements-form-container.txt`.
 4. Confirm that public examples remain fictional, AI-generated, and free of private or
    organization-specific material.
@@ -19,6 +19,7 @@ minor, or major version instead.
 ```sh
 ./tools/check.sh
 python3 -m unittest discover -s tests -v
+go test ./...
 ./build.sh
 docker build --check .
 docker build -t colofon:release .

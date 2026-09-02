@@ -12,9 +12,13 @@ Run standalone:  tools/bookmd_lint.py chapter.md [more.md ...]
 Importable:      lint(chapters) -> (problems, known_ids)
                  chapters = [(path, text), ...]; problem = (severity, path, line, msg)
 """
+import argparse
 import os
 import re
 import sys
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import automation
 
 WS = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
@@ -81,17 +85,45 @@ def report(problems, known, out=sys.stderr):
 
 
 def main():
-    paths = sys.argv[1:]
+    ap = argparse.ArgumentParser(description="lint book-flavored Markdown")
+    ap.add_argument("paths", nargs="+")
+    ap.add_argument("--json", action="store_true", help="emit a structured result")
+    a = ap.parse_args()
+    paths = a.paths
     if not paths:
         print("usage: bookmd_lint.py chapter.md [...]", file=sys.stderr)
         return 2
     chapters = []
     for path in paths:
-        with open(path, encoding="utf-8") as chapter:
-            chapters.append((path, chapter.read()))
+        try:
+            with open(path, encoding="utf-8") as chapter:
+                chapters.append((path, chapter.read()))
+        except OSError as e:
+            if a.json:
+                automation.emit(automation.failure("markdown-lint", e, path))
+                return 1
+            raise
     problems, known = lint(chapters)
-    n = report(problems, known)
-    if n == 0 and not problems:
+    n = len([problem for problem in problems if problem[0] == "error"])
+    if a.json:
+        automation.emit({
+            "api_version": automation.API_VERSION,
+            "defined_ids": known,
+            "kind": "markdown-lint",
+            "ok": n == 0,
+            "problems": [
+                {
+                    "line": line,
+                    "message": message,
+                    "severity": severity,
+                    "source": os.path.abspath(path),
+                }
+                for severity, path, line, message in problems
+            ],
+        })
+    else:
+        n = report(problems, known)
+    if not a.json and n == 0 and not problems:
         print("bookmd_lint: ok")
     return 1 if n else 0
 
