@@ -31,6 +31,21 @@ def receive(process, timeout=15):
     return json.loads(line)
 
 
+def call(process, request_id, name, arguments, timeout=180):
+    send(process, {
+        "jsonrpc": "2.0",
+        "id": request_id,
+        "method": "tools/call",
+        "params": {"name": name, "arguments": arguments},
+    })
+    response = receive(process, timeout)
+    result = response.get("result", {})
+    structured = result.get("structuredContent", {})
+    if result.get("isError") or not structured.get("ok"):
+        raise RuntimeError(f"{name} failed: {response}")
+    return structured
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("command", nargs=argparse.REMAINDER)
@@ -66,20 +81,21 @@ def main():
         tools = {tool["name"] for tool in listed.get("result", {}).get("tools", [])}
         if tools != EXPECTED_TOOLS:
             raise RuntimeError(f"tools/list returned {sorted(tools)}, expected {sorted(EXPECTED_TOOLS)}")
-        send(process, {
-            "jsonrpc": "2.0",
-            "id": 3,
-            "method": "tools/call",
-            "params": {
-                "name": "colofon_lint",
-                "arguments": {"sources": ["tools/factory-examples/sample-report.md"]},
-            },
+        call(process, 3, "colofon_lint", {
+            "sources": ["tools/factory-examples/sample-report.md"],
         })
-        linted = receive(process)
-        lint_result = linted.get("result", {})
-        structured = lint_result.get("structuredContent", {})
-        if lint_result.get("isError") or not structured.get("ok"):
-            raise RuntimeError(f"colofon_lint failed: {linted}")
+        document = call(process, 4, "colofon_build_document", {
+            "source": "tools/factory-examples/sample-report.md",
+            "output": "build/mcp-smoke-report.pdf",
+        })
+        if not document.get("results", [{}])[0].get("checks", {}).get("verified"):
+            raise RuntimeError(f"document result was not verified: {document}")
+        book = call(process, 5, "colofon_build_book", {
+            "source": "tools/factory-examples/book/book.yaml",
+            "output": "build/mcp-smoke-book.pdf",
+        })
+        if not book.get("checks", {}).get("verified"):
+            raise RuntimeError(f"book result was not verified: {book}")
         print("MCP smoke test: ok (" + ", ".join(sorted(tools)) + ")")
         return 0
     finally:

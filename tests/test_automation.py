@@ -64,7 +64,7 @@ class StructuredCommands(unittest.TestCase):
             source = os.path.join(directory, "chapter.md")
             with open(source, "w", encoding="utf-8") as chapter:
                 chapter.write("# Start\n\nSee [nowhere](#missing).\n")
-            result, payload = run_json("lint", source, "--json")
+            result, payload = run_json("lint", "chapter.md", "--json", cwd=directory)
         self.assertNotEqual(result.returncode, 0)
         self.assertFalse(payload["ok"])
         self.assertEqual(payload["problems"][0]["severity"], "error")

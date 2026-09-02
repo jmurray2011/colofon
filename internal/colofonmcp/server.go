@@ -21,7 +21,7 @@ import (
 const maxCommandOutput = 1024 * 1024
 
 // Version is the Colofon release implemented by this server.
-const Version = "0.2.0"
+const Version = "0.2.1"
 
 type DocumentInput struct {
 	Source string `json:"source" jsonschema:"Markdown source path, relative to the configured workspace"`

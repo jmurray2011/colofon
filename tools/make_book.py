@@ -40,6 +40,7 @@ import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import automation
+import workspace_paths
 
 WS = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 TYPST = os.environ.get("TYPST", os.path.expanduser("~/.local/bin/typst"))
@@ -106,16 +107,18 @@ def main():
     a = ap.parse_args()
     JSON_OUTPUT = a.json
     JSON_SOURCE = a.book
-    if not os.path.isfile(a.book):
-        die(f"no such file: {a.book}")
     project_root = os.path.abspath(a.root or project_root_for(a.book))
     if not os.path.isdir(project_root):
         die(f"project root is not a directory: {project_root}")
+    try:
+        book_path = workspace_paths.confined_file(a.book, project_root, "book")
+    except workspace_paths.WorkspacePathError as e:
+        die(e)
     import yaml
 
-    with open(a.book, encoding="utf-8") as book_file:
+    with open(book_path, encoding="utf-8") as book_file:
         spec = yaml.safe_load(book_file) or {}
-    base = os.path.dirname(os.path.abspath(a.book))
+    base = os.path.dirname(book_path)
 
     if not spec.get("title"):
         die(f"{a.book}: 'title' is required")
@@ -124,7 +127,13 @@ def main():
         die(f"{a.book}: 'parts' must be a non-empty list")
     if spec.get("logo") and not spec.get("logo-alt"):
         die(f"{a.book}: 'logo' is set but 'logo-alt' is missing (UA-1 needs alt text)")
+    if spec.get("brand"):
+        try:
+            workspace_paths.package_name(spec["brand"])
+        except workspace_paths.WorkspacePathError as e:
+            die(f"{a.book}: {e}")
 
+    chapter_paths = {}
     for p in parts:
         if not p.get("title"):
             die(f"{a.book}: every part needs a 'title'")
@@ -132,8 +141,12 @@ def main():
         if not isinstance(chs, list) or not chs:
             die(f"{a.book}: part '{p['title']}' has no chapters")
         for c in chs:
-            if not os.path.isfile(os.path.join(base, c)):
-                die(f"{a.book}: chapter not found: {c} (relative to {base})")
+            try:
+                chapter_paths[c] = workspace_paths.relative_file(
+                    c, base, project_root, f"chapter {c!r}"
+                )
+            except workspace_paths.WorkspacePathError as e:
+                die(f"{a.book}: {e}")
 
     # plain-English preflight (alt text, dangling cross-refs, missing/stale screenshots)
     import bookmd_lint
@@ -141,19 +154,22 @@ def main():
     chapter_files = []
     for part in parts:
         for chapter in part["chapters"]:
-            chapter_path = os.path.join(base, chapter)
+            chapter_path = chapter_paths[chapter]
             with open(chapter_path, encoding="utf-8") as chapter_file:
                 chapter_files.append((chapter_path, chapter_file.read()))
-    problems, known = bookmd_lint.lint(chapter_files)
+    problems, known = bookmd_lint.lint(chapter_files, project_root)
     if bookmd_lint.report(problems, known):
         die("fix the content problem(s) above, then rebuild")
 
     # single-source variables: vars-from (shared) overlaid by inline vars
     variables = {}
     if spec.get("vars-from"):
-        vf = os.path.join(base, spec["vars-from"])
-        if not os.path.isfile(vf):
-            die(f"{a.book}: vars-from not found: {spec['vars-from']}")
+        try:
+            vf = workspace_paths.relative_file(
+                spec["vars-from"], base, project_root, "vars-from"
+            )
+        except workspace_paths.WorkspacePathError as e:
+            die(f"{a.book}: {e}")
         with open(vf, encoding="utf-8") as variables_file:
             variables.update(yaml.safe_load(variables_file) or {})
     variables.update(spec.get("vars") or {})
@@ -188,6 +204,10 @@ def main():
             project_root, "packages", "local", brand, "0.1.0", "lib.typ"
         )
         if os.path.realpath(project_root) != os.path.realpath(WS) and os.path.isfile(consumer_brand):
+            try:
+                workspace_paths.confined_file(consumer_brand, project_root, "brand package")
+            except workspace_paths.WorkspacePathError as e:
+                die(f"{a.book}: {e}")
             imports.append(
                 f'#import "/packages/local/{brand}/0.1.0/lib.typ": book-args as _brand'
             )
@@ -224,7 +244,7 @@ def main():
             body.append("#appendix-state.update(true)")
         body.append(f"= {p['title']}")
         for c in p["chapters"]:
-            ra = proc[os.path.join(base, c)]
+            ra = proc[chapter_paths[c]]
             body.append(f"#chapter-md(read({tstr(ra)}), img: (p, ..a) => image(p, ..a))")
         body.append("")
 

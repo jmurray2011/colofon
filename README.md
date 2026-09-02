@@ -82,8 +82,9 @@ exactly three core tools:
 - `colofon_build_book` builds and verifies one YAML/Markdown book.
 
 The server receives an explicit workspace at startup. Tool arguments must be relative to
-that workspace; symlink escapes and absolute paths are rejected, and generated files are
-restricted to `build/`. Calls are serialized, time-limited, and delegated to the same
+that workspace; symlink escapes and absolute paths are rejected, including chapter,
+variables-file, brand, and screenshot references discovered inside source files. Generated
+files are restricted to `build/`. Calls are serialized, time-limited, and delegated to the same
 factory commands and compliance gates used by the CLI. The server has no network transport
 and does not expose fillable forms or PyMuPDF.
 
@@ -99,7 +100,7 @@ open and an absolute host project path mounted at `/work`:
       "args": [
         "run", "--rm", "-i",
         "-v", "/absolute/path/to/document-project:/work",
-        "ghcr.io/jmurray2011/colofon:0.2.0",
+        "ghcr.io/jmurray2011/colofon:0.2.1",
         "mcp", "--stdio", "--workspace", "/work"
       ]
     }
@@ -316,7 +317,7 @@ Use `latest` for a quick trial or an immutable version tag for repeatable builds
 docker pull ghcr.io/jmurray2011/colofon:latest
 docker run --rm ghcr.io/jmurray2011/colofon:latest version
 
-docker pull ghcr.io/jmurray2011/colofon:0.2.0
+docker pull ghcr.io/jmurray2011/colofon:0.2.1
 ```
 
 Mount a document project at `/work` to build its sources. Outputs and `.factory-build/`
@@ -340,9 +341,9 @@ corresponding-source offer are in [AGPL-COMPLIANCE.md](AGPL-COMPLIANCE.md).
 docker build --target forms -t colofon-form:local .
 docker run --rm colofon-form:local test
 
-docker pull ghcr.io/jmurray2011/colofon-form:0.2.0
+docker pull ghcr.io/jmurray2011/colofon-form:0.2.1
 docker run --rm -v "$PWD:/work" -w /work \
-  ghcr.io/jmurray2011/colofon-form:0.2.0 \
+  ghcr.io/jmurray2011/colofon-form:0.2.1 \
   form request.typ -o build/request.pdf
 ```
 

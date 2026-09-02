@@ -94,8 +94,12 @@ jobs:
         run: |
           test "$(docker run --rm --entrypoint /usr/local/bin/colofon-mcp colofon:test --help 2>&1 | head -1)" = "Usage of /usr/local/bin/colofon-mcp:"
           docker run --rm --entrypoint test colofon:test -r /usr/share/licenses/colofon-mcp/MCP-GO-SDK-LICENSE.txt
+          fixture="$(mktemp -d)"
+          trap 'rm -rf "$fixture"' EXIT
+          mkdir -p "$fixture/tools"
+          cp -R tools/factory-examples "$fixture/tools/"
           python3 tools/mcp_smoke.py -- \
-            docker run --rm -i -v "$GITHUB_WORKSPACE:/work:ro" \
+            docker run --rm -i -v "$fixture:/work" \
             colofon:test mcp --stdio --workspace /work
 
       - name: Build form test image
