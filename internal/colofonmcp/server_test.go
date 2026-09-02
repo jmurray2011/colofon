@@ -138,6 +138,24 @@ func TestCommandOutputIsBounded(t *testing.T) {
 	}
 }
 
+func TestDescribeDelegatesToMachineFacingCLI(t *testing.T) {
+	runner, workspace := testRunner(t)
+	result, payload, err := runner.describe(context.Background(), DescribeInput{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if result.IsError || payload["ok"] != true {
+		t.Fatalf("unexpected result: %#v %#v", result, payload)
+	}
+	invocation, err := os.ReadFile(filepath.Join(workspace, "invocation"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := string(invocation); got != "describe\n--json\n" {
+		t.Fatalf("invocation = %q, want describe JSON command", got)
+	}
+}
+
 func TestServerPublishesOnlyCoreTools(t *testing.T) {
 	runner, _ := testRunner(t)
 	clientTransport, serverTransport := mcp.NewInMemoryTransports()
@@ -152,6 +170,10 @@ func TestServerPublishesOnlyCoreTools(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer clientSession.Close()
+	if initialized := clientSession.InitializeResult(); initialized == nil ||
+		!strings.Contains(initialized.Instructions, "colofon_describe") {
+		t.Fatalf("server instructions do not explain discovery: %#v", initialized)
+	}
 	listed, err := clientSession.ListTools(context.Background(), nil)
 	if err != nil {
 		t.Fatal(err)
@@ -161,7 +183,9 @@ func TestServerPublishesOnlyCoreTools(t *testing.T) {
 		names = append(names, tool.Name)
 	}
 	sort.Strings(names)
-	want := []string{"colofon_build_book", "colofon_build_document", "colofon_lint"}
+	want := []string{
+		"colofon_build_book", "colofon_build_document", "colofon_describe", "colofon_lint",
+	}
 	if strings.Join(names, ",") != strings.Join(want, ",") {
 		t.Fatalf("tool names = %v, want %v", names, want)
 	}
