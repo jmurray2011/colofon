@@ -6,7 +6,7 @@ import os
 import shutil
 
 API_VERSION = "1"
-FACTORY_VERSION = "0.2.1"
+FACTORY_VERSION = "0.3.0"
 
 
 def emit(payload):
