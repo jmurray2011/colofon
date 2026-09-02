@@ -34,6 +34,10 @@ smaller project, `--doctype memo` (or another supported doctype) to change the s
 starter, and `--brand example-studio` to include a consumer-local starter brand. Add
 `--dry-run` to inspect the planned files without writing them.
 
+The `--user` option keeps generated files owned by you on Linux. Docker Desktop users on
+macOS or Windows can omit `--user "$(id -u):$(id -g)"`; `$PWD` works in PowerShell, while
+Command Prompt users should replace it with an absolute path.
+
 ## What it produces
 
 These previews are rendered from the checked-in Larkspur sources. The house style,
@@ -317,12 +321,25 @@ omit keeps the neutral default. Fonts and the neutral grays are shared engine de
 Keep a brand in its own package (a small `.typ` that exports a `theme` dict + the logo) and
 import it, so the brand lives in one place across every document.
 
-## Using the style in a document repo
+## Using Colofon in another repository
 
-A consumer repo vendors `packages/local/house/` and `engine/fonts/`, then builds with
-`--package-path packages --font-path engine/fonts` (see any consumer's `build.sh`). Source files
-`#import "@local/house:0.1.0": *`. Bumping the vendored copy is how a consumer adopts a new
-style version.
+The recommended container-first setup keeps only your Markdown/YAML sources, assets, and
+optional brand package in the document repository. The released image supplies Colofon's
+engine, fonts, Typst, veraPDF, and other build dependencies. `colofon init` creates this
+layout; pinning the image tag makes its output repeatable. You do not need to copy Colofon's
+house package or fonts into each consumer repository.
+
+Consumer-owned brands are the deliberate exception. Keep a small package such as
+`packages/local/example-studio/0.1.0/` beside the documents and set
+`brand: example-studio` in front matter or `book.yaml`. The container discovers that
+package through the mounted project while retaining the shared house engine inside the
+image.
+
+For fully native or offline builds without Docker, vendor the required
+`packages/local/house/`, `packages/local/bookmd/`, preview packages, and `engine/fonts/`,
+then invoke the factory with its host dependencies installed. Treat this as an advanced
+distribution mode: record the vendored Colofon release and update the whole dependency set
+together rather than copying individual files opportunistically.
 
 ## Requirements
 

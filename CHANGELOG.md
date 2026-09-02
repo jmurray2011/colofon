@@ -18,6 +18,11 @@ repository releases; the versioned Typst packages declare their own compatible v
 - Automated, hash-verified corresponding-source attachments and changelog-derived notes
   for tagged GitHub releases.
 
+### Changed
+
+- Clarified the recommended container-first consumer layout, including host ownership,
+  Docker Desktop, consumer-brand, and advanced native-vendoring guidance.
+
 ## 0.2.1 - 2026-09-01
 
 ### Fixed
