@@ -120,15 +120,20 @@ A successful document result has this shape (values shortened here):
 ## MCP server
 
 `colofon-mcp` is a small local stdio server built with the official MCP Go SDK. It exposes
-four core tools and startup instructions describing the safe authoring workflow:
+five core tools and startup instructions describing the safe authoring workflow:
 
 - `colofon_describe` returns the current authoring schemas, versions, and capabilities.
+- `colofon_init_project` creates a fictional, AI-generated starter in the configured
+  workspace and refuses to overwrite any existing file. It accepts the same `kind`,
+  `doctype`, `brand`, and `dry_run` choices as the CLI initializer.
 - `colofon_lint` reads and checks one or more Markdown files.
 - `colofon_build_document` builds and verifies one standalone Markdown document.
 - `colofon_build_book` builds and verifies one YAML/Markdown book.
 
-The server receives an explicit workspace at startup. Tool arguments must be relative to
-that workspace; symlink escapes and absolute paths are rejected, including chapter,
+The server receives an explicit workspace at startup. Project initialization is restricted
+to that workspace; use a blank mounted directory when starting a new project. Other tool
+arguments must be relative to that workspace; symlink escapes and absolute paths are
+rejected, including chapter,
 variables-file, brand, and screenshot references discovered inside source files. Generated
 files are restricted to `build/`. Calls are serialized, time-limited, and delegated to the same
 factory commands and compliance gates used by the CLI. The server has no network transport

@@ -2,6 +2,7 @@ package colofonmcp
 
 import (
 	"context"
+	"encoding/json"
 	"os"
 	"path/filepath"
 	"sort"
@@ -156,6 +157,45 @@ func TestDescribeDelegatesToMachineFacingCLI(t *testing.T) {
 	}
 }
 
+func TestInitProjectDelegatesToConfiguredWorkspace(t *testing.T) {
+	runner, workspace := testRunner(t)
+	result, payload, err := runner.initProject(context.Background(), ProjectInitInput{
+		Kind: "book", Doctype: "memo", Brand: "example-studio", DryRun: true,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if result.IsError || payload["ok"] != true {
+		t.Fatalf("unexpected result: %#v %#v", result, payload)
+	}
+	invocation, err := os.ReadFile(filepath.Join(workspace, "invocation"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := "init\n.\n--kind\nbook\n--doctype\nmemo\n--brand\nexample-studio\n--dry-run\n--json\n"
+	if got := string(invocation); got != want {
+		t.Fatalf("invocation = %q, want %q", got, want)
+	}
+}
+
+func TestInitProjectRejectsUnknownChoicesBeforeCallingCLI(t *testing.T) {
+	runner, workspace := testRunner(t)
+	for name, input := range map[string]ProjectInitInput{
+		"kind":    {Kind: "website"},
+		"doctype": {Doctype: "invoice"},
+	} {
+		t.Run(name, func(t *testing.T) {
+			_, _, err := runner.initProject(context.Background(), input)
+			if err == nil {
+				t.Fatal("invalid initialization choice was accepted")
+			}
+		})
+	}
+	if _, err := os.Stat(filepath.Join(workspace, "invocation")); !os.IsNotExist(err) {
+		t.Fatalf("CLI was invoked for invalid input: %v", err)
+	}
+}
+
 func TestServerPublishesOnlyCoreTools(t *testing.T) {
 	runner, _ := testRunner(t)
 	clientTransport, serverTransport := mcp.NewInMemoryTransports()
@@ -171,7 +211,8 @@ func TestServerPublishesOnlyCoreTools(t *testing.T) {
 	}
 	defer clientSession.Close()
 	if initialized := clientSession.InitializeResult(); initialized == nil ||
-		!strings.Contains(initialized.Instructions, "colofon_describe") {
+		!strings.Contains(initialized.Instructions, "colofon_describe") ||
+		!strings.Contains(initialized.Instructions, "colofon_init_project") {
 		t.Fatalf("server instructions do not explain discovery: %#v", initialized)
 	}
 	listed, err := clientSession.ListTools(context.Background(), nil)
@@ -179,14 +220,33 @@ func TestServerPublishesOnlyCoreTools(t *testing.T) {
 		t.Fatal(err)
 	}
 	var names []string
+	var initTool *mcp.Tool
 	for _, tool := range listed.Tools {
 		names = append(names, tool.Name)
+		if tool.Name == "colofon_init_project" {
+			initTool = tool
+		}
 	}
 	sort.Strings(names)
 	want := []string{
-		"colofon_build_book", "colofon_build_document", "colofon_describe", "colofon_lint",
+		"colofon_build_book", "colofon_build_document", "colofon_describe",
+		"colofon_init_project", "colofon_lint",
 	}
 	if strings.Join(names, ",") != strings.Join(want, ",") {
 		t.Fatalf("tool names = %v, want %v", names, want)
+	}
+	if initTool == nil || initTool.Annotations == nil || initTool.Annotations.DestructiveHint == nil ||
+		*initTool.Annotations.DestructiveHint || initTool.Annotations.ReadOnlyHint {
+		t.Fatalf("project initialization annotations are unsafe or missing: %#v", initTool)
+	}
+	schema, err := json.Marshal(initTool.InputSchema)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, want := range []string{`"additionalProperties":false`, `"both"`, `"onepager"`,
+		`^[a-z0-9][a-z0-9-]*$`} {
+		if !strings.Contains(string(schema), want) {
+			t.Errorf("project initialization schema %s does not contain %q", schema, want)
+		}
 	}
 }

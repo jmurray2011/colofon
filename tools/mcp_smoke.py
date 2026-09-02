@@ -11,6 +11,7 @@ EXPECTED_TOOLS = {
     "colofon_build_book",
     "colofon_build_document",
     "colofon_describe",
+    "colofon_init_project",
     "colofon_lint",
 }
 
@@ -44,6 +45,21 @@ def call(process, request_id, name, arguments, timeout=180):
     structured = result.get("structuredContent", {})
     if result.get("isError") or not structured.get("ok"):
         raise RuntimeError(f"{name} failed: {response}")
+    return structured
+
+
+def call_error(process, request_id, name, arguments, timeout=30):
+    send(process, {
+        "jsonrpc": "2.0",
+        "id": request_id,
+        "method": "tools/call",
+        "params": {"name": name, "arguments": arguments},
+    })
+    response = receive(process, timeout)
+    result = response.get("result", {})
+    structured = result.get("structuredContent", {})
+    if not result.get("isError") or structured.get("ok") is not False:
+        raise RuntimeError(f"{name} unexpectedly succeeded: {response}")
     return structured
 
 
@@ -87,21 +103,37 @@ def main():
         described = call(process, 3, "colofon_describe", {})
         if "report" not in described.get("document_schemas", {}):
             raise RuntimeError(f"describe omitted document schemas: {described}")
-        call(process, 4, "colofon_lint", {
-            "sources": ["tools/factory-examples/sample-report.md"],
+        initialized_project = call(process, 4, "colofon_init_project", {
+            "brand": "example-studio",
         })
-        document = call(process, 5, "colofon_build_document", {
-            "source": "tools/factory-examples/sample-report.md",
-            "output": "build/mcp-smoke-report.pdf",
+        expected_starters = {
+            "documents/example-report.md",
+            "book/book.yaml",
+            "book/chapters/01-welcome.md",
+            "packages/local/example-studio/0.1.0/lib.typ",
+        }
+        if not expected_starters.issubset(initialized_project.get("files", [])):
+            raise RuntimeError(f"project init omitted starter files: {initialized_project}")
+        refusal = call_error(process, 5, "colofon_init_project", {
+            "brand": "example-studio",
         })
-        if not document.get("results", [{}])[0].get("checks", {}).get("verified"):
-            raise RuntimeError(f"document result was not verified: {document}")
-        book = call(process, 6, "colofon_build_book", {
-            "source": "tools/factory-examples/book/book.yaml",
-            "output": "build/mcp-smoke-book.pdf",
+        if "overwrite" not in json.dumps(refusal).lower():
+            raise RuntimeError(f"repeated init did not explain its refusal: {refusal}")
+        call(process, 6, "colofon_lint", {
+            "sources": ["documents/example-report.md", "book/chapters/01-welcome.md"],
         })
-        if not book.get("checks", {}).get("verified"):
-            raise RuntimeError(f"book result was not verified: {book}")
+        initialized_document = call(process, 7, "colofon_build_document", {
+            "source": "documents/example-report.md",
+            "output": "build/mcp-init-report.pdf",
+        })
+        if not initialized_document.get("results", [{}])[0].get("checks", {}).get("verified"):
+            raise RuntimeError(f"initialized document was not verified: {initialized_document}")
+        initialized_book = call(process, 8, "colofon_build_book", {
+            "source": "book/book.yaml",
+            "output": "build/mcp-init-book.pdf",
+        })
+        if not initialized_book.get("checks", {}).get("verified"):
+            raise RuntimeError(f"initialized book was not verified: {initialized_book}")
         print("MCP smoke test: ok (" + ", ".join(sorted(tools)) + ")")
         return 0
     finally:
