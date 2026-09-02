@@ -6,5 +6,6 @@
 .ruff_cache/
 **/__pycache__/
 **/build/
+bin/
 CLAUDE.md
 tools/.toolcache/

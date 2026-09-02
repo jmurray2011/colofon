@@ -5,6 +5,18 @@ repository releases; the versioned Typst packages declare their own compatible v
 
 ## Unreleased
 
+## 0.2.0 - 2026-09-01
+
+### Added
+
+- A versioned JSON automation contract for factory descriptions, toolchain diagnostics,
+  lint results, and verified document and book build results.
+- A workspace-confined Go MCP server with lint, standalone-document build, and book build
+  tools over local stdio transport.
+- The MCP server and its dependency license texts in both core and form container images.
+- Go tests for path confinement and MCP tool discovery, plus CI and Dependabot coverage for
+  the Go module.
+
 ## 0.1.1 - 2026-09-01
 
 ### Added
@@ -36,6 +48,7 @@ repository releases; the versioned Typst packages declare their own compatible v
 - Added the fictional, AI-generated Larkspur example suite.
 - Published AMD64 and ARM64 container images through GitHub Container Registry.
 
-[Unreleased]: https://github.com/jmurray2011/colofon/compare/v0.1.1...HEAD
+[Unreleased]: https://github.com/jmurray2011/colofon/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/jmurray2011/colofon/releases/tag/v0.2.0
 [0.1.1]: https://github.com/jmurray2011/colofon/releases/tag/v0.1.1
 [0.1.0]: https://github.com/jmurray2011/colofon/releases/tag/v0.1.0

@@ -43,6 +43,9 @@ import shutil
 import subprocess
 import sys
 
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import automation
+
 WS = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 TYPST = os.environ.get("TYPST", os.path.expanduser("~/.local/bin/typst"))
 VERAPDF = os.environ.get("VERAPDF", os.path.expanduser("~/.local/verapdf/verapdf"))
@@ -261,9 +264,9 @@ def collect_inputs(inputs):
         elif os.path.isfile(p):
             files.append(p)
         else:
-            die(f"no such file or directory: {p}")
+            raise BuildError(f"no such file or directory: {p}")
     if not files:
-        die("no .md inputs found")
+        raise BuildError("no .md inputs found")
     return files
 
 
@@ -290,25 +293,51 @@ def main():
             "(default: each input's Git worktree, falling back to the colofon repo)."
         ),
     )
+    ap.add_argument("--json", action="store_true", help="emit a structured result")
     a = ap.parse_args()
 
-    files = collect_inputs(a.inputs)
+    try:
+        files = collect_inputs(a.inputs)
+    except BuildError as e:
+        if a.json:
+            automation.emit(automation.failure("document-build", e))
+            return 1
+        die(e)
     if a.output and len(files) > 1:
-        die("-o/--output is only valid with a single input file")
+        message = "-o/--output is only valid with a single input file"
+        if a.json:
+            automation.emit(automation.failure("document-build", message))
+            return 1
+        die(message)
 
-    ok, failed = [], []
+    ok, failed, results, errors = [], [], [], []
     for f in files:
         try:
             out = build_one(f, a.output, a.root or project_root_for(f))
-            print(f">> built {out} ({os.path.getsize(out)} bytes)")
+            result = automation.artifact_result(
+                "document-build", f, out, os.path.exists(VERAPDF), bool(shutil.which("pdftotext"))
+            )
+            results.append(result)
+            if not a.json:
+                print(f">> built {out} ({os.path.getsize(out)} bytes)")
             ok.append(f)
         except BuildError as e:
-            print(str(e), file=sys.stderr)
+            errors.append({"message": str(e), "source": os.path.abspath(f)})
+            if not a.json:
+                print(str(e), file=sys.stderr)
             failed.append(f)
-    if len(files) > 1:
+    if a.json:
+        automation.emit({
+            "api_version": automation.API_VERSION,
+            "errors": errors,
+            "kind": "document-build",
+            "ok": not failed,
+            "results": results,
+        })
+    elif len(files) > 1:
         print(f">> {len(ok)} built, {len(failed)} failed")
-    sys.exit(1 if failed else 0)
+    return 1 if failed else 0
 
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())

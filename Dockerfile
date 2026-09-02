@@ -1,5 +1,32 @@
 # syntax=docker/dockerfile:1
 
+# Build the local-only MCP adapter as a static binary for both release architectures.
+FROM golang:1.25.3-alpine@sha256:aee43c3ccbf24fdffb7295693b6e33b21e01baec1b2a55acc351fde345e9ec34 AS mcp-builder
+
+WORKDIR /src
+COPY go.mod go.sum ./
+RUN go mod download
+COPY cmd/ ./cmd/
+COPY internal/ ./internal/
+ARG TARGETOS TARGETARCH
+RUN CGO_ENABLED=0 GOOS="$TARGETOS" GOARCH="$TARGETARCH" \
+      go build -trimpath -ldflags="-s -w" -o /out/colofon-mcp ./cmd/colofon-mcp \
+ && install -d /out/licenses \
+ && cp /go/pkg/mod/github.com/modelcontextprotocol/go-sdk@v1.7.0/LICENSE \
+      /out/licenses/MCP-GO-SDK-LICENSE.txt \
+ && cp /go/pkg/mod/github.com/google/jsonschema-go@v0.4.3/LICENSE \
+      /out/licenses/JSONSCHEMA-GO-LICENSE.txt \
+ && cp /go/pkg/mod/github.com/segmentio/asm@v1.1.3/LICENSE \
+      /out/licenses/SEGMENTIO-ASM-LICENSE.txt \
+ && cp /go/pkg/mod/github.com/segmentio/encoding@v0.5.4/LICENSE \
+      /out/licenses/SEGMENTIO-ENCODING-LICENSE.txt \
+ && cp /go/pkg/mod/github.com/yosida95/uritemplate/v3@v3.0.2/LICENSE \
+      /out/licenses/URITEMPLATE-LICENSE.txt \
+ && cp /go/pkg/mod/golang.org/x/oauth2@v0.35.0/LICENSE /out/licenses/GO-OAUTH2-LICENSE.txt \
+ && cp /go/pkg/mod/golang.org/x/sync@v0.20.0/LICENSE /out/licenses/GO-SYNC-LICENSE.txt \
+ && cp /go/pkg/mod/golang.org/x/sys@v0.41.0/LICENSE /out/licenses/GO-SYS-LICENSE.txt \
+ && cp /go/pkg/mod/golang.org/x/time@v0.15.0/LICENSE /out/licenses/GO-TIME-LICENSE.txt
+
 # Pin the multi-architecture Temurin manifest. Dependabot updates the digest while
 # retaining the human-readable Java/Jammy tag.
 FROM eclipse-temurin:17-jre-jammy@sha256:e17d77fb030dd4b642dc078d048a5fb9efcb3676ee20305d905949105a6ccd5a AS tool-installer
@@ -110,11 +137,14 @@ RUN apt-get update \
 COPY --from=tool-installer /usr/local/bin/typst /usr/local/bin/typst
 COPY --from=tool-installer /opt/verapdf /opt/verapdf
 COPY --from=core-python-deps /opt/colofon-python /opt/colofon-python
+COPY --from=mcp-builder /out/colofon-mcp /usr/local/bin/colofon-mcp
+COPY --from=mcp-builder /out/licenses/ /usr/share/licenses/colofon-mcp/
 
 RUN ln -s /opt/verapdf/verapdf /usr/local/bin/verapdf \
  && typst --version \
  && verapdf --version \
  && python3 -c "import yaml" \
+ && colofon-mcp --help >/dev/null \
  && pdftotext -v 2>&1 | head -1
 
 COPY --chown=colofon:colofon . /opt/colofon
