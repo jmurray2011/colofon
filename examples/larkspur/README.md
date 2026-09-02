@@ -40,3 +40,11 @@ PDFs are written to `examples/larkspur/build/`, which is gitignored. The Markdow
 outputs must pass the PDF/UA-1, no-warning, and copy-safety gates. When requested, the
 fillable form reports its accessibility result separately because its AcroForm widget
 layer is not gate-verified.
+
+Regenerate the three checked-in README previews from these verified PDFs with:
+
+```sh
+examples/larkspur/render-gallery.sh
+```
+
+The preview script requires `pdftoppm` from Poppler and writes PNGs to `docs/images/`.
