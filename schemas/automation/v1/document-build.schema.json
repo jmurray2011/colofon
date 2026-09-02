@@ -1,0 +1,12 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": ["api_version", "errors", "kind", "ok", "results"],
+  "properties": {
+    "api_version": {"const": "1"},
+    "errors": {"type": "array", "items": {"$ref": "common.schema.json#/$defs/error"}},
+    "kind": {"const": "document-build"},
+    "ok": {"const": true},
+    "results": {"type": "array", "items": {"$ref": "common.schema.json#/$defs/build_result"}}
+  }
+}

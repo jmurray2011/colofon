@@ -86,6 +86,11 @@ Build results include the absolute artifact path, byte size, SHA-256 digest, and
 PDF/UA-1 and copy-safety verdicts. The top-level `api_version` is the compatibility boundary
 for machine consumers; it is independent of the Colofon release version.
 
+Published Draft 2020-12 schemas for every successful automation result and the common
+failure envelope are under [`schemas/automation/v1/`](schemas/automation/v1/). `describe`
+returns their repository-relative paths so an integration can discover the contract that
+matches the running factory.
+
 A successful document result has this shape (values shortened here):
 
 ```json

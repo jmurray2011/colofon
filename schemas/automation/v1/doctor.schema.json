@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": ["api_version", "configuration", "factory_version", "kind", "ok", "platform", "tools"],
+  "properties": {
+    "api_version": {"const": "1"},
+    "configuration": {"type": "object"},
+    "factory_version": {"type": "string"},
+    "kind": {"const": "diagnostics"},
+    "ok": {"type": "boolean"},
+    "platform": {"type": "string"},
+    "tools": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["configured", "name", "present"],
+        "properties": {
+          "configured": {"type": "string"},
+          "name": {"type": "string"},
+          "present": {"type": "boolean"}
+        }
+      }
+    }
+  }
+}

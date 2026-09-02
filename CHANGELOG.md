@@ -13,6 +13,8 @@ repository releases; the versioned Typst packages declare their own compatible v
   book, and optional consumer-brand starter projects without overwriting existing files.
 - A README gallery rendered reproducibly from the fictional, AI-generated Larkspur
   field guide and one-page document.
+- Discoverable Draft 2020-12 JSON Schemas for description, diagnostics, lint, project
+  initialization, and document/book build results, with representative contract tests.
 
 ## 0.2.1 - 2026-09-01
 
