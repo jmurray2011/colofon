@@ -15,6 +15,25 @@ brand's documents.
 | `engine/fonts/` | IBM Plex (Serif / Sans / Mono), passed to Typst via `--font-path`. |
 | `tools/` | The factory CLIs and the copy-safe gate. |
 
+## Quick start
+
+Create a complete neutral starter project, then build its verified report and book with
+the released container:
+
+```sh
+mkdir my-documents && cd my-documents
+docker run --rm --user "$(id -u):$(id -g)" -v "$PWD:/work" \
+  ghcr.io/jmurray2011/colofon:0.2.1 init .
+docker run --rm --user "$(id -u):$(id -g)" -v "$PWD:/work" \
+  ghcr.io/jmurray2011/colofon:0.2.1 doc documents/example-report.md \
+  -o build/example-report.pdf
+```
+
+`init` never overwrites an existing file. Use `--kind document` or `--kind book` for a
+smaller project, `--doctype memo` (or another supported doctype) to change the standalone
+starter, and `--brand example-studio` to include a consumer-local starter brand. Add
+`--dry-run` to inspect the planned files without writing them.
+
 ## The factory
 
 ```sh
@@ -38,6 +57,7 @@ result:
 ```sh
 tools/colofon describe --json
 tools/colofon doctor --json
+tools/colofon init new-project --brand example-studio --json
 tools/colofon lint --json chapters/intro.md chapters/operate.md
 tools/colofon doc report.md -o build/report.pdf --json
 tools/colofon book book.yaml -o build/book.pdf --json
