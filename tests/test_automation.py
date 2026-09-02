@@ -8,7 +8,6 @@ import subprocess
 import tempfile
 import unittest
 
-
 WS = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 COLOFON = os.path.join(WS, "tools", "colofon")
 TYPST = os.environ.get("TYPST", os.path.expanduser("~/.local/bin/typst"))
