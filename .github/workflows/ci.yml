@@ -99,7 +99,7 @@ jobs:
           mkdir -p "$fixture/tools"
           cp -R tools/factory-examples "$fixture/tools/"
           python3 tools/mcp_smoke.py -- \
-            docker run --rm -i -v "$fixture:/work" \
+            docker run --rm -i --user "$(id -u):$(id -g)" -v "$fixture:/work" \
             colofon:test mcp --stdio --workspace /work
 
       - name: Build form test image
