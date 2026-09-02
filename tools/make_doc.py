@@ -45,6 +45,7 @@ import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import automation
+import workspace_paths
 
 WS = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 TYPST = os.environ.get("TYPST", os.path.expanduser("~/.local/bin/typst"))
@@ -121,6 +122,11 @@ def validate_meta(meta, doctype, path):
         )
     if "logo" in meta and not meta.get("logo-alt"):
         raise BuildError(f"{path}: 'logo' is set but 'logo-alt' is missing (UA-1 needs alt text)")
+    if meta.get("brand"):
+        try:
+            workspace_paths.package_name(meta["brand"])
+        except workspace_paths.WorkspacePathError as e:
+            raise BuildError(f"{path}: {e}") from e
 
 
 def check_body_alt(body, path):
@@ -160,6 +166,10 @@ def build_wrapper(meta, doctype, project_root=WS):
             project_root, "packages", "local", brand, "0.1.0", "lib.typ"
         )
         if os.path.realpath(project_root) != os.path.realpath(WS) and os.path.isfile(consumer_brand):
+            try:
+                workspace_paths.confined_file(consumer_brand, project_root, "brand package")
+            except workspace_paths.WorkspacePathError as e:
+                raise BuildError(str(e)) from e
             imports += (
                 f'\n#import "/packages/local/{brand}/0.1.0/lib.typ": '
                 "book-args as _brand"

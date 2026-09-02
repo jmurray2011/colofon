@@ -5,6 +5,16 @@ repository releases; the versioned Typst packages declare their own compatible v
 
 ## Unreleased
 
+## 0.2.1 - 2026-09-01
+
+### Fixed
+
+- Confine book chapters, variables files, consumer brand packages, and screenshot assets
+  to the configured project root, including after symlink resolution.
+- Resolve root-absolute screenshot references against the consumer project instead of the
+  Colofon installation.
+- Exercise lint plus verified document and book builds in the container MCP smoke test.
+
 ## 0.2.0 - 2026-09-01
 
 ### Added
@@ -48,7 +58,8 @@ repository releases; the versioned Typst packages declare their own compatible v
 - Added the fictional, AI-generated Larkspur example suite.
 - Published AMD64 and ARM64 container images through GitHub Container Registry.
 
-[Unreleased]: https://github.com/jmurray2011/colofon/compare/v0.2.0...HEAD
+[Unreleased]: https://github.com/jmurray2011/colofon/compare/v0.2.1...HEAD
+[0.2.1]: https://github.com/jmurray2011/colofon/releases/tag/v0.2.1
 [0.2.0]: https://github.com/jmurray2011/colofon/releases/tag/v0.2.0
 [0.1.1]: https://github.com/jmurray2011/colofon/releases/tag/v0.1.1
 [0.1.0]: https://github.com/jmurray2011/colofon/releases/tag/v0.1.0

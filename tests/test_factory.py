@@ -33,6 +33,8 @@ def _load(name):
 
 
 make_doc = _load("make_doc")
+bookmd_lint = _load("bookmd_lint")
+workspace_paths = _load("workspace_paths")
 
 HAVE_TYPST = os.path.exists(make_doc.TYPST)
 HAVE_VERAPDF = os.path.exists(make_doc.VERAPDF)
@@ -169,6 +171,71 @@ class ConsumerProjectRoot(unittest.TestCase):
         with tempfile.TemporaryDirectory() as root:
             src = write(root, "doc.md", MINIMAL)
             self.assertEqual(make_doc.project_root_for(src), WS)
+
+
+class WorkspaceConfinement(unittest.TestCase):
+    """Nested consumer inputs must stay inside the declared project root."""
+
+    def test_relative_input_inside_workspace_is_allowed(self):
+        with tempfile.TemporaryDirectory() as root:
+            book = os.path.join(root, "book")
+            os.makedirs(book)
+            chapter = write(book, "chapter.md", "# Chapter\n")
+            self.assertEqual(
+                workspace_paths.relative_file("chapter.md", book, root, "chapter"),
+                os.path.realpath(chapter),
+            )
+
+    def test_relative_input_cannot_traverse_outside_workspace(self):
+        with tempfile.TemporaryDirectory() as parent:
+            root = os.path.join(parent, "project")
+            os.makedirs(root)
+            write(parent, "outside.md", "private\n")
+            with self.assertRaises(workspace_paths.WorkspacePathError) as cm:
+                workspace_paths.relative_file("../outside.md", root, root, "chapter")
+        self.assertIn("outside the project root", str(cm.exception))
+
+    def test_relative_input_cannot_escape_through_symlink(self):
+        with tempfile.TemporaryDirectory() as parent:
+            root = os.path.join(parent, "project")
+            os.makedirs(root)
+            outside = write(parent, "outside.yaml", "secret: value\n")
+            os.symlink(outside, os.path.join(root, "release.yaml"))
+            with self.assertRaises(workspace_paths.WorkspacePathError) as cm:
+                workspace_paths.relative_file("release.yaml", root, root, "vars-from")
+        self.assertIn("outside the project root", str(cm.exception))
+
+    def test_root_absolute_screenshot_uses_consumer_workspace(self):
+        with tempfile.TemporaryDirectory() as root:
+            docs = os.path.join(root, "docs")
+            assets = os.path.join(root, "assets")
+            os.makedirs(docs)
+            os.makedirs(assets)
+            chapter = write(docs, "chapter.md", "![Status](shot:/assets/status.png)\n")
+            write(assets, "status.png", "not-a-real-png\n")
+            with open(chapter, encoding="utf-8") as source:
+                problems, _ = bookmd_lint.lint([(chapter, source.read())], root)
+        self.assertEqual(problems, [])
+
+    def test_screenshot_cannot_traverse_outside_workspace(self):
+        with tempfile.TemporaryDirectory() as parent:
+            root = os.path.join(parent, "project")
+            docs = os.path.join(root, "docs")
+            os.makedirs(docs)
+            write(parent, "outside.png", "private\n")
+            chapter = write(docs, "chapter.md", "![Status](shot:../../outside.png)\n")
+            with open(chapter, encoding="utf-8") as source:
+                problems, _ = bookmd_lint.lint([(chapter, source.read())], root)
+        self.assertEqual(problems[0][0], "error")
+        self.assertIn("outside the project root", problems[0][3])
+
+    def test_generated_import_rejects_invalid_brand_name(self):
+        text = "---\ndoctype: report\ntitle: Test\nbrand: ../../outside\n---\n\nBody.\n"
+        with self.assertRaises(make_doc.BuildError) as cm:
+            make_doc.validate_meta(
+                make_doc.split_front_matter(text, "doc.md")[0], "report", "doc.md"
+            )
+        self.assertIn("lowercase letters", str(cm.exception))
 
 
 class FactoryExampleCoverage(unittest.TestCase):

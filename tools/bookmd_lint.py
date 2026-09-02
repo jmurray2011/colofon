@@ -19,6 +19,7 @@ import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import automation
+import workspace_paths
 
 WS = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
@@ -29,12 +30,16 @@ def slugify(s):
     return re.sub(r"\s+", "-", s.strip())
 
 
-def _asset(src):
+def _asset(src, source, project_root):
     p = src.removeprefix("shot:")
-    return os.path.join(WS, p.lstrip("/")) if p.startswith("/") else p
+    if p.startswith("/"):
+        candidate = os.path.join(project_root, p.lstrip("/"))
+    else:
+        candidate = os.path.join(os.path.dirname(os.path.abspath(source)), p)
+    return workspace_paths.confined_file(candidate, project_root, "screenshot")
 
 
-def lint(chapters):
+def lint(chapters, project_root=WS):
     # every id a cross-reference could resolve to: explicit {#id} plus heading slugs
     explicit, slugs = {}, set()
     for path, text in chapters:
@@ -59,10 +64,12 @@ def lint(chapters):
             if re.search(r"!\[\s*\]\(", line):
                 problems.append(("error", path, i, "image has no alt text - write ![describe it](...)"))
             for m in re.finditer(r"!\[[^\]]*\]\((shot:[^)]+)\)", line):
-                ap = _asset(m.group(1))
-                if not os.path.isfile(ap):
-                    problems.append(("error", path, i, f"screenshot not found: {m.group(1)[5:]}"))
-                elif os.path.getmtime(ap) < os.path.getmtime(path):
+                try:
+                    ap = _asset(m.group(1), path, project_root)
+                except workspace_paths.WorkspacePathError as e:
+                    problems.append(("error", path, i, str(e)))
+                    continue
+                if os.path.getmtime(ap) < os.path.getmtime(path):
                     problems.append(("warning", path, i,
                         f"screenshot {os.path.basename(ap)} is older than this chapter - it may be out of date"))
             for m in re.finditer(r"\]\(#([\w-]+)\)", line):
@@ -87,23 +94,26 @@ def report(problems, known, out=sys.stderr):
 def main():
     ap = argparse.ArgumentParser(description="lint book-flavored Markdown")
     ap.add_argument("paths", nargs="+")
+    ap.add_argument("--root", help="project root for assets and path confinement")
     ap.add_argument("--json", action="store_true", help="emit a structured result")
     a = ap.parse_args()
     paths = a.paths
     if not paths:
         print("usage: bookmd_lint.py chapter.md [...]", file=sys.stderr)
         return 2
+    project_root = os.path.abspath(a.root or workspace_paths.project_root_for(paths[0], WS))
     chapters = []
     for path in paths:
         try:
-            with open(path, encoding="utf-8") as chapter:
-                chapters.append((path, chapter.read()))
-        except OSError as e:
+            resolved = workspace_paths.confined_file(path, project_root, "Markdown source")
+            with open(resolved, encoding="utf-8") as chapter:
+                chapters.append((resolved, chapter.read()))
+        except (OSError, workspace_paths.WorkspacePathError) as e:
             if a.json:
                 automation.emit(automation.failure("markdown-lint", e, path))
                 return 1
             raise
-    problems, known = lint(chapters)
+    problems, known = lint(chapters, project_root)
     n = len([problem for problem in problems if problem[0] == "error"])
     if a.json:
         automation.emit({

@@ -19,7 +19,7 @@ Usage:
   colofon test
   colofon version
 
-The doc, book, and form commands use the current directory as the Typst project
+The doc, book, form, and lint commands use the current directory as the project
 root unless --root is supplied. Fillable forms require the optional PyMuPDF extra
 or the explicitly AGPL-licensed colofon-form image. In Docker, mount a project at
 /work and run the container with /work as its working directory.
@@ -65,7 +65,10 @@ case "${1:-help}" in
     ;;
   lint)
     shift
-    exec python3 "$APP/tools/bookmd_lint.py" "$@"
+    if has_root "$@"; then
+      exec python3 "$APP/tools/bookmd_lint.py" "$@"
+    fi
+    exec python3 "$APP/tools/bookmd_lint.py" --root "$PWD" "$@"
     ;;
   convert)
     shift
