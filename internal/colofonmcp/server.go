@@ -26,7 +26,7 @@ const instructions = "Call colofon_describe before authoring to discover the cur
 	"must report verified=true with pdfua1, typst_pdfua1, and copy_safe all passing."
 
 // Version is the Colofon release implemented by this server.
-const Version = "0.2.1"
+const Version = "0.3.0"
 
 type DocumentInput struct {
 	Source string `json:"source" jsonschema:"Markdown source path, relative to the configured workspace"`

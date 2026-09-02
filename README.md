@@ -23,9 +23,9 @@ the released container:
 ```sh
 mkdir my-documents && cd my-documents
 docker run --rm --user "$(id -u):$(id -g)" -v "$PWD:/work" \
-  ghcr.io/jmurray2011/colofon:0.2.1 init .
+  ghcr.io/jmurray2011/colofon:0.3.0 init .
 docker run --rm --user "$(id -u):$(id -g)" -v "$PWD:/work" \
-  ghcr.io/jmurray2011/colofon:0.2.1 doc documents/example-report.md \
+  ghcr.io/jmurray2011/colofon:0.3.0 doc documents/example-report.md \
   -o build/example-report.pdf
 ```
 
@@ -146,7 +146,7 @@ open and an absolute host project path mounted at `/work`:
       "args": [
         "run", "--rm", "-i",
         "-v", "/absolute/path/to/document-project:/work",
-        "ghcr.io/jmurray2011/colofon:0.2.1",
+        "ghcr.io/jmurray2011/colofon:0.3.0",
         "mcp", "--stdio", "--workspace", "/work"
       ]
     }
@@ -376,7 +376,7 @@ Use `latest` for a quick trial or an immutable version tag for repeatable builds
 docker pull ghcr.io/jmurray2011/colofon:latest
 docker run --rm ghcr.io/jmurray2011/colofon:latest version
 
-docker pull ghcr.io/jmurray2011/colofon:0.2.1
+docker pull ghcr.io/jmurray2011/colofon:0.3.0
 ```
 
 Mount a document project at `/work` to build its sources. Outputs and `.factory-build/`
@@ -400,9 +400,9 @@ corresponding-source offer are in [AGPL-COMPLIANCE.md](AGPL-COMPLIANCE.md).
 docker build --target forms -t colofon-form:local .
 docker run --rm colofon-form:local test
 
-docker pull ghcr.io/jmurray2011/colofon-form:0.2.1
+docker pull ghcr.io/jmurray2011/colofon-form:0.3.0
 docker run --rm -v "$PWD:/work" -w /work \
-  ghcr.io/jmurray2011/colofon-form:0.2.1 \
+  ghcr.io/jmurray2011/colofon-form:0.3.0 \
   form request.typ -o build/request.pdf
 ```
 
