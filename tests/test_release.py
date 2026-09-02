@@ -1,9 +1,9 @@
 import hashlib
 import json
 import os
-from pathlib import Path
 import tempfile
 import unittest
+from pathlib import Path
 
 import release_assets
 import release_notes

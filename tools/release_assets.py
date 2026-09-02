@@ -7,10 +7,10 @@ import argparse
 import hashlib
 import json
 import os
-from pathlib import Path
 import shutil
 import sys
 import urllib.request
+from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 DEFAULT_MANIFEST = ROOT / "tools" / "form-sources.json"
@@ -24,7 +24,7 @@ def load_manifest(path: Path = DEFAULT_MANIFEST) -> dict[str, dict[str, str]]:
     filenames: set[str] = set()
     for name, source in data.items():
         if not isinstance(source, dict):
-            raise ValueError(f"source {name!r} must be an object")
+            raise TypeError(f"source {name!r} must be an object")
         if set(source) != {"filename", "sha256", "url"}:
             raise ValueError(f"source {name!r} has unexpected fields")
         filename = source["filename"]
@@ -71,9 +71,11 @@ def fetch(destination: Path, manifest_path: Path = DEFAULT_MANIFEST) -> list[Pat
             request = urllib.request.Request(
                 source["url"], headers={"User-Agent": "colofon-release-assets/1"}
             )
-            with urllib.request.urlopen(request, timeout=120) as response:  # noqa: S310
-                with temporary.open("wb") as output:
-                    shutil.copyfileobj(response, output, length=1024 * 1024)
+            with (
+                urllib.request.urlopen(request, timeout=120) as response,
+                temporary.open("wb") as output,
+            ):
+                shutil.copyfileobj(response, output, length=1024 * 1024)
             verify(temporary, source["sha256"])
             os.replace(temporary, target)
         finally:
@@ -93,7 +95,7 @@ def main() -> int:
 
     try:
         paths = fetch(args.destination, args.manifest)
-    except (OSError, ValueError, json.JSONDecodeError) as error:
+    except (OSError, TypeError, ValueError, json.JSONDecodeError) as error:
         print(f"release asset error: {error}", file=sys.stderr)
         return 1
 
