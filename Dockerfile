@@ -29,7 +29,7 @@ RUN CGO_ENABLED=0 GOOS="$TARGETOS" GOARCH="$TARGETARCH" \
 
 # Pin the multi-architecture Temurin manifest. Dependabot updates the digest while
 # retaining the human-readable Java/Jammy tag.
-FROM eclipse-temurin:17-jre-jammy@sha256:e17d77fb030dd4b642dc078d048a5fb9efcb3676ee20305d905949105a6ccd5a AS tool-installer
+FROM eclipse-temurin:25-jre-jammy@sha256:10c251954d0bfe1a59ba93505f8c628d755919412400aa98685764c9353605d6 AS tool-installer
 
 ARG TARGETARCH
 ARG TYPST_VERSION=0.15.0
@@ -74,7 +74,7 @@ RUN set -eux; \
 
 # Resolve only hash-locked wheels here; pip and its build metadata do not enter
 # either runtime image.
-FROM eclipse-temurin:17-jre-jammy@sha256:e17d77fb030dd4b642dc078d048a5fb9efcb3676ee20305d905949105a6ccd5a AS python-installer
+FROM eclipse-temurin:25-jre-jammy@sha256:10c251954d0bfe1a59ba93505f8c628d755919412400aa98685764c9353605d6 AS python-installer
 
 RUN apt-get update \
  && apt-get install -y --no-install-recommends python3 python3-pip \
@@ -105,7 +105,7 @@ RUN python3 -m pip install \
 
 # Shared runtime for the permissively licensed core image and the explicitly
 # AGPL form image.
-FROM eclipse-temurin:17-jre-jammy@sha256:e17d77fb030dd4b642dc078d048a5fb9efcb3676ee20305d905949105a6ccd5a AS runtime-base
+FROM eclipse-temurin:25-jre-jammy@sha256:10c251954d0bfe1a59ba93505f8c628d755919412400aa98685764c9353605d6 AS runtime-base
 
 LABEL org.opencontainers.image.title="Colofon" \
       org.opencontainers.image.description="Themeable Typst document factory with PDF/UA validation" \
