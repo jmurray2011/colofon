@@ -63,6 +63,12 @@ class ProjectInit(unittest.TestCase):
         self.assertNotIn("documents/", files["README.md"])
         self.assertIn("book/book.yaml", files["README.md"])
 
+    def test_readme_explains_container_first_ownership(self):
+        readme = colofon_init.plan(brand="example-studio")["README.md"]
+        self.assertIn("supplies Colofon's engine, fonts, and build tools", readme)
+        self.assertIn("consumer-owned brand", readme)
+        self.assertIn("macOS or", readme)
+
     def test_invalid_brand_name_is_rejected(self):
         with self.assertRaises(ValueError):
             colofon_init.plan(brand="../../private")

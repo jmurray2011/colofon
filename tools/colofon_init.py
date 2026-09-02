@@ -135,6 +135,13 @@ def project_readme(doctype, include_document, include_book, brand=None):
             f'docker run --rm --user "$(id -u):$(id -g)" -v "$PWD:/work" {image} book book/book.yaml -o build/example-book.pdf'
         )
     lines.extend(["```", ""])
+    lines.extend([
+        "The `--user` option keeps generated files owned by you on Linux. On macOS or",
+        "Windows with Docker Desktop, omit `--user \"$(id -u):$(id -g)\"`. The container",
+        "supplies Colofon's engine, fonts, and build tools; this project keeps only your",
+        "sources, assets, and optional consumer-owned brand.",
+        "",
+    ])
     if brand:
         lines.extend([
             f"The generated `{brand}` package is under `packages/local/{brand}/0.1.0/`.",
