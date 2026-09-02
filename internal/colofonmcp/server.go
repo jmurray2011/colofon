@@ -20,6 +20,11 @@ import (
 
 const maxCommandOutput = 1024 * 1024
 
+const instructions = "Call colofon_describe before authoring to discover the current " +
+	"document and book schemas. Keep every source path relative to the configured workspace, " +
+	"lint Markdown before building, and write PDF outputs only below build/. Successful builds " +
+	"must report verified=true with pdfua1, typst_pdfua1, and copy_safe all passing."
+
 // Version is the Colofon release implemented by this server.
 const Version = "0.2.1"
 
@@ -36,6 +41,8 @@ type BookInput struct {
 type LintInput struct {
 	Sources []string `json:"sources" jsonschema:"Markdown source paths, relative to the configured workspace"`
 }
+
+type DescribeInput struct{}
 
 // Runner validates all paths and delegates work to Colofon's machine-facing CLI.
 type Runner struct {
@@ -279,12 +286,28 @@ func (r *Runner) lint(ctx context.Context, input LintInput) (*mcp.CallToolResult
 	return toolResult(payload), payload, err
 }
 
+func (r *Runner) describe(ctx context.Context, _ DescribeInput) (*mcp.CallToolResult, map[string]any, error) {
+	payload, err := r.command(ctx, "describe", "--json")
+	return toolResult(payload), payload, err
+}
+
 func boolPointer(value bool) *bool { return &value }
 
-// Server constructs the stdio MCP server with Colofon's three core tools.
+// Server constructs the stdio MCP server with Colofon's core tools.
 func Server(runner *Runner) *mcp.Server {
-	server := mcp.NewServer(&mcp.Implementation{Name: "colofon", Version: Version}, nil)
+	server := mcp.NewServer(
+		&mcp.Implementation{Name: "colofon", Version: Version},
+		&mcp.ServerOptions{Instructions: instructions},
+	)
 	closed := boolPointer(false)
+	mcp.AddTool(server, &mcp.Tool{
+		Name:        "colofon_describe",
+		Title:       "Describe Colofon Authoring",
+		Description: "Return Colofon's current document schemas, book schema, versions, and enabled capabilities.",
+		Annotations: &mcp.ToolAnnotations{ReadOnlyHint: true, OpenWorldHint: closed},
+	}, func(ctx context.Context, _ *mcp.CallToolRequest, input DescribeInput) (*mcp.CallToolResult, map[string]any, error) {
+		return runner.describe(ctx, input)
+	})
 	mcp.AddTool(server, &mcp.Tool{
 		Name:        "colofon_lint",
 		Title:       "Lint Colofon Markdown",

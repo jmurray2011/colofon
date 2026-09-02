@@ -75,8 +75,9 @@ A successful document result has this shape (values shortened here):
 ## MCP server
 
 `colofon-mcp` is a small local stdio server built with the official MCP Go SDK. It exposes
-exactly three core tools:
+four core tools and startup instructions describing the safe authoring workflow:
 
+- `colofon_describe` returns the current authoring schemas, versions, and capabilities.
 - `colofon_lint` reads and checks one or more Markdown files.
 - `colofon_build_document` builds and verifies one standalone Markdown document.
 - `colofon_build_book` builds and verifies one YAML/Markdown book.

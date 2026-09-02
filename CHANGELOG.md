@@ -5,6 +5,11 @@ repository releases; the versioned Typst packages declare their own compatible v
 
 ## Unreleased
 
+### Added
+
+- A self-describing MCP authoring surface with server workflow instructions and a
+  `colofon_describe` tool backed by the versioned automation API.
+
 ## 0.2.1 - 2026-09-01
 
 ### Fixed
