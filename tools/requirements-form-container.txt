@@ -1,5 +1,8 @@
 # Hash-locked AGPL dependency used only by the optional AMD64/ARM64 form image.
 # Update the version and both architecture hashes together.
-PyMuPDF==1.28.2 \
-    --hash=sha256:3050a233dde1211efe89ada74e2add6238436434159f46097a1423aad2842545 \
-    --hash=sha256:397d6715c1f0df7548a92d0afd8ce370fc48fa47aeefac16be2bc04a16a8227f
+PyMuPDF==2.0 \
+    --hash=sha256:707594e8de4946445489ca3274943911a505a5cb665adf8751a4edfc4c0fff58 \
+    --hash=sha256:7733136f626fffe98677daa53c906eb45f2eb486a6450dbcfd652cbbd760f1e2 \
+    --hash=sha256:c9faff6d6ec5882e934a21893917f2c460bbc79f3645318e1f8d726990ab4580 \
+    --hash=sha256:f59f009b1586d56882739189cd3a4f0240efbfae28ebf268a3763ed9a2006270 \
+    --hash=sha256:f92e8a7ae92c7b1cbffcbe8764166ab1234e0a37b07549f5951e7739241d34f0
