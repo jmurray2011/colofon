@@ -1,7 +1,7 @@
 # syntax=docker/dockerfile:1
 
 # Build the local-only MCP adapter as a static binary for both release architectures.
-FROM --platform=$BUILDPLATFORM golang:1.25.7-alpine@sha256:f6751d823c26342f9506c03797d2527668d095b0a15f1862cddb4d927a7a4ced AS mcp-builder
+FROM --platform=$BUILDPLATFORM golang:1.27.3-alpine@sha256:b8c9b82affbbb82a020bbcf998dad2ba9516944ac7e883524642a481a9505e9c AS mcp-builder
 
 WORKDIR /src
 COPY go.mod go.sum ./
